@@ -11,6 +11,7 @@ import numpy as np
 from index import BM25Index, HNSWIndex
 from rerank import rerank_retrieved_objs
 from constants import CHECK_NUM
+import copy
 
 
 def parse_args():
@@ -61,13 +62,15 @@ def get_sample_values(
     if len(checked_obj_dict) == 0:
         temp_data = json.load(open(f"{args.path}/{args.dataset}_sample_values.json"))
         samples = temp_data[attribute]
+        non_linguistic_samples = temp_data.get(f"{attribute}_non-linguistic", None)
     else:
         pos_objs = [k for k, v in checked_obj_dict.items() if v == 1]
         neg_objs = [k for k, v in checked_obj_dict.items() if v == 0]
         if len(neg_objs) > 5:
             neg_objs = np.random.choice(neg_objs, 5, replace=False)
         samples = list(pos_objs) + list(neg_objs)
-    return samples
+        non_linguistic_samples = None
+    return samples, non_linguistic_samples
 
 
 def solve_query(
@@ -85,28 +88,33 @@ def solve_query(
     rerank_time = 0
     checked_obj_dict = {}
     print(f"\n\n\n======Processing Query: [{query.org_query}]=======")
-    # Step 2: reformulate the query
-    start_time = time.time()
-    sample_values = get_sample_values({}, args, attribute)
-    cur_generated_query_list = reformulate(
-        query.org_query,
-        attribute,
-        sample_values,
-        query.queries_from_generated,
-        args.reform_type,
-    )
-    cur_generated_query_list = [
-        q for q in cur_generated_query_list if q != query.org_query
-    ]
-    query.update_queries_from_generated(cur_generated_query_list)
-    reformulate_time += time.time() - start_time
-    print(f"Time for reformulating: {time.time() - start_time:.4f}s")
+    non_linguistic_values = []
+    # # Step 2: reformulate the query
+    # start_time = time.time()
+    # sample_values, non_linguistic_sample_values = get_sample_values({}, args, attribute)
+    # cur_generated_query_list, non_linguistic_values = reformulate(
+    #     query.org_query,
+    #     attribute,
+    #     sample_values,
+    #     non_linguistic_sample_values,
+    # )
+    # cur_generated_query_list = [
+    #     q for q in cur_generated_query_list if q != query.org_query
+    # ]
+    # query.update_queries_from_generated(cur_generated_query_list)
+    # _, query_scores_new = llm_check_retrieved_objs(
+    #     query, cur_generated_query_list, args
+    # )
+    # query.update_query_scores(query_scores_new)
+    # reformulate_time += time.time() - start_time
+    # print(f"Time for reformulating: {time.time() - start_time:.4f}s")
 
     # Step 3: Iteratively refine the query and retrieve the cell values
     early_stop = 0
     step = 0
     last_pos_num = 0
-    check_num = CHECK_NUM
+    # check_num = CHECK_NUM
+    check_num = args.budget
     while len(query.obj_scores) < args.budget:
         step += 1
         print(f"\n======Step {step}=======")
@@ -116,14 +124,13 @@ def solve_query(
         start_time = time.time()
         new_query_objs = query.new_queries_from_generated + query.new_queries_from_table
         new_query_objs = [q for q in new_query_objs if q not in query.query_scores]
-        if len(new_query_objs) > 0:
-            query_scores_new = score_query(query.query_condition, new_query_objs)
-            query.update_query_scores(query_scores_new)
         if step == 1 or last_pos_num > 0:
             query_list = query.select_diversified_query_words(
                 hnsw_index.emb_model, args.select_query
             )
-            bm25_queries = query.select_bm25_query_words(args.select_query)
+            bm25_queries = (
+                query.select_bm25_query_words(args.select_query) + non_linguistic_values
+            )
             print(
                 f"Step {step} Diversified query list ({len(query_list)}): {query_list}"
             )
@@ -242,7 +249,7 @@ if __name__ == "__main__":
         # reformat_template = "The value is the same as or a type of '{query}'."
         # llm_template = "Is '{value}' the same as or a type of '{query}'? Directly answer with 'Yes' or 'No'."
     reformat_template = "The value is the same as or a type of '{query}'."
-    llm_template = "Is '{value}' the same as or a type of '{query}'? Directly answer with 'Yes' or 'No'."
+    llm_template = "Is '{value}' the same as or a type of '{query}'? Directly answer with 'Yes', 'No', or 'Unsure'."
     corpus = df[attribute].values.tolist()
 
     args.llm_template = llm_template

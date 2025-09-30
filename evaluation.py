@@ -29,7 +29,7 @@ if __name__ == "__main__":
     exp_name = sys.argv[2]
     # method = sys.argv[3] if len(sys.argv) > 3 else "weighted"
     method = "weighted"
-    limit = int(sys.argv[3]) if len(sys.argv) > 4 else None
+    limit = int(sys.argv[3]) if len(sys.argv) > 3 else None
     df, query_answer, query_template, filename = load_data(dataset_name)
     result_data = json.load(
         open(f"results/{exp_name}/{dataset_name}_{method}.json", "r")
@@ -70,6 +70,8 @@ if __name__ == "__main__":
         time_list.append(d.get("time", 0))
         retrieved = d.get("retrieved", pred)
         query_scores = d.get("query_scores", {})
+        if query not in pred and query in retrieved:
+            pred.append(query)
         if len(gt) == 0:
             continue
         k = len(retrieved)
@@ -78,7 +80,7 @@ if __name__ == "__main__":
         pred = []
         for p in pred_org:
             score = query_scores.get(p, 2)
-            if score > 0:
+            if score > 1:
                 pred.append(p)
         if len(pred) == 0:
             pred = pred_org

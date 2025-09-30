@@ -74,7 +74,8 @@ def prepare_data(
         feature = deepcopy(query.obj_features[obj])
         # feature[0] = feature[0] / max_bm25_score
         # feature.append(max(feature[0], feature[1]))
-        score = (score + query.query_scores.get(obj, 0)) / 2
+        # score = (score + query.query_scores.get(obj, 0)) / 2
+        score = query.query_scores.get(obj, 0)
         if score > 0:
             pos_samples.append(feature)
             pos_objs.append(obj)

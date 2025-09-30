@@ -1,6 +1,7 @@
 import openai
 from typing import List
 from concurrent.futures import ThreadPoolExecutor
+from collections import defaultdict
 
 # from appl import ppl, gen, SystemMessage, convo, records, SystemRole
 # from appl.compositor import Tagged, NumberedList, DashList
@@ -8,12 +9,13 @@ from concurrent.futures import ThreadPoolExecutor
 # from reformulate import refine_query
 
 client = openai.OpenAI(
-    base_url="http://localhost:1172/v1",  # vLLM server address
-    api_key="qwen-72b",  # dummy token
+    base_url="http://localhost:1117/v1",  # vLLM server address
+    api_key="llama",  # dummy token
 )
 
-# model_path = "meta-llama/Llama-3.3-70B-Instruct"
-model_path = "Qwen/Qwen2.5-72B-Instruct"
+model_path = "meta-llama/Llama-3.3-70B-Instruct"
+# model_path = "Qwen/Qwen2.5-72B-Instruct"
+# model_path = "deepseek-chat"
 
 
 def process_single_prompt(cond: str, col: str, val: str) -> str:
@@ -42,13 +44,20 @@ def llm_check(
         # prompt += " Please directly answer with 'Yes' or 'No'."
         prompts.append(prompt)
     if len(prompts) == 0:
-        return []
+        return {}
     results = run_inference(prompts, max_tokens)
+    obj_scores = {}
     filtered_vals = []
     for val, result in zip(corpus_new, results):
         if result.strip().lower().startswith("yes"):
-            filtered_vals.append(val)
-    return filtered_vals
+            obj_scores[val] = 2
+        elif result.strip().lower().startswith("unsure"):
+            obj_scores[val] = 1
+        else:
+            obj_scores[val] = 0
+            # filtered_vals.append(val)
+    # return filtered_vals
+    return obj_scores
 
 
 # @ppl
@@ -58,7 +67,7 @@ def llm_check(
 
 
 def run_inference(
-    prompts: List[str], max_tokens=1024, system_prompts: list = None
+    prompts: List[str], max_tokens=1024, system_prompts: list = None, temperature=0.0
 ) -> List[str]:
 
     def generate_completion(prompt, system_prompt=None):
@@ -71,7 +80,7 @@ def run_inference(
             model=model_path,
             messages=messages,
             max_tokens=max_tokens,
-            temperature=0.0,
+            temperature=temperature,
             seed=42,
         )
         return response.choices[0].message.content

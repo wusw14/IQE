@@ -4,7 +4,23 @@
         "gaseous diphosgene",
         "diphosgene"
     ],
+    "trichloromethyl carbonochloridate": [
+        "liquid diphosgene",
+        "gaseous diphosgene",
+        "diphosgene"
+    ],
+    "trichloromethyl chloroformate": [
+        "liquid diphosgene",
+        "gaseous diphosgene",
+        "diphosgene"
+    ],
     "adamsite": [
+        "gaseous adamsite",
+        "liquid adamsite",
+        "solid adamsite",
+        "adamsite"
+    ],
+    "10-Chloro-5,10-dihydrophenazarsinine": [
         "gaseous adamsite",
         "liquid adamsite",
         "solid adamsite",
@@ -23,7 +39,25 @@
         "thymidine",
         "dihydrouracil"
     ],
+    "1,3-Diazabenzene": [
+        "cytosine",
+        "pyrimidine",
+        "deoxyuridine",
+        "deoxycytidine",
+        "bromodeoxyuridine",
+        "uridine",
+        "uracil",
+        "thymine",
+        "barbituric acid",
+        "thymidine",
+        "dihydrouracil"
+    ],
     "hexane": [
+        "hexane molecule",
+        "hexane",
+        "liquid hexane"
+    ],
+    "hexacarbane": [
         "hexane molecule",
         "hexane",
         "liquid hexane"
@@ -32,6 +66,16 @@
         "phenyldichloroarsine",
         "liquid phenyldichloroarsine",
         "gaseous phenyldichloroarsine"
+    ],
+    "phenylarsonous dichloride": [
+        "phenyldichloroarsine",
+        "liquid phenyldichloroarsine",
+        "gaseous phenyldichloroarsine"
+    ],
+    "Trichloromethane": [
+        "liquid chloroform",
+        "chloroform",
+        "gaseous chloroform"
     ],
     "chloroform": [
         "liquid chloroform",
@@ -43,7 +87,17 @@
         "cyanogen chloride",
         "gaseous cyanogen chloride"
     ],
+    "carbononitridic chloride": [
+        "liquid cyanogen chloride",
+        "cyanogen chloride",
+        "gaseous cyanogen chloride"
+    ],
     "carbon dioxide": [
+        "carbon dioxide",
+        "carbon dioxide molecule",
+        "gaseous carbon dioxide"
+    ],
+    "CO2": [
         "carbon dioxide",
         "carbon dioxide molecule",
         "gaseous carbon dioxide"
@@ -53,7 +107,17 @@
         "o3",
         "ozone molecule"
     ],
+    "O3": [
+        "ozone",
+        "o3",
+        "ozone molecule"
+    ],
     "diphenylcyanoarsine": [
+        "liquid diphenylcyanoarsine",
+        "gaseous diphenylcyanoarsine",
+        "diphenylcyanoarsine"
+    ],
+    "diphenylarsinous cyanide": [
         "liquid diphenylcyanoarsine",
         "gaseous diphenylcyanoarsine",
         "diphenylcyanoarsine"
@@ -85,6 +149,14 @@
         "dextrose",
         "dextroglucose"
     ],
+    "dextrose": [
+        "d glucose",
+        "glucose molecule",
+        "one simple form of sugar",
+        "glucose",
+        "dextrose",
+        "dextroglucose"
+    ],
     "cellulose": [
         "hypromellose",
         "methyl cellulose",
@@ -96,6 +168,11 @@
         "cellulose"
     ],
     "propoxur": [
+        "propoxur",
+        "liquid propoxur",
+        "gaseous propoxur"
+    ],
+    "2-[(Propan-2-yl)oxy]phenyl methylcarbamate": [
         "propoxur",
         "liquid propoxur",
         "gaseous propoxur"
@@ -112,7 +189,18 @@
         "liquid sodium cyanide",
         "gaseous sodium cyanide"
     ],
+    "NaCN": [
+        "sodium cyanide",
+        "liquid sodium cyanide",
+        "gaseous sodium cyanide"
+    ],
     "xanthine": [
+        "xanthine",
+        "theophylline",
+        "paraxanthine",
+        "theobromine"
+    ],
+    "3,7-dihydropurine-2,6-dione": [
         "xanthine",
         "theophylline",
         "paraxanthine",
@@ -122,7 +210,16 @@
         "gaseous carbon monoxide",
         "carbon monoxide"
     ],
+    "CO": [
+        "gaseous carbon monoxide",
+        "carbon monoxide"
+    ],
     "lewisite": [
+        "gaseous lewisite",
+        "liquid lewisite",
+        "lewisite"
+    ],
+    "[(E)-2-Chloroethen-1-yl]arsonous dichloride": [
         "gaseous lewisite",
         "liquid lewisite",
         "lewisite"
@@ -134,12 +231,30 @@
         "ammonia",
         "active ingredient in windex"
     ],
+    "Azane": [
+        "liquid ammonia",
+        "ammonium hydroxide",
+        "anhydrous ammonia",
+        "ammonia",
+        "active ingredient in windex"
+    ],
     "perfluoroisobutene": [
         "gaseous perfluoroisobutene",
         "perfluoroisobutene",
         "liquid perfluoroisobutene"
     ],
+    "1,1,3,3,3-Pentafluoro-2-(trifluoromethyl)prop-1-ene": [
+        "gaseous perfluoroisobutene",
+        "perfluoroisobutene",
+        "liquid perfluoroisobutene"
+    ],
     "calcium carbonate": [
+        "calcium carbonate",
+        "calcite",
+        "aragonite",
+        "vaterite"
+    ],
+    "calcite": [
         "calcium carbonate",
         "calcite",
         "aragonite",
@@ -151,12 +266,28 @@
         "ldl cholesterol",
         "cholesterol molecule"
     ],
+    "Cholesterin": [
+        "hdl cholesterol",
+        "cholesterol",
+        "ldl cholesterol",
+        "cholesterol molecule"
+    ],
     "phosgene": [
         "phosgene",
         "gaseous phosgene",
         "liquid phosgene"
     ],
+    "Carbonyl dichloride": [
+        "phosgene",
+        "gaseous phosgene",
+        "liquid phosgene"
+    ],
     "hydrogen peroxide": [
+        "hydrogen peroxide",
+        "gaseous hydrogen peroxide",
+        "liquid hydrogen peroxide"
+    ],
+    "H2O2": [
         "hydrogen peroxide",
         "gaseous hydrogen peroxide",
         "liquid hydrogen peroxide"
@@ -186,6 +317,11 @@
         "methane molecule",
         "liquid methane"
     ],
+    "CH4": [
+        "methane",
+        "methane molecule",
+        "liquid methane"
+    ],
     "butane": [
         "butane",
         "n butane",
@@ -197,12 +333,27 @@
         "methanol",
         "methanol molecule"
     ],
+    "CH3OH": [
+        "liquid methanol",
+        "methanol",
+        "methanol molecule"
+    ],
     "soman": [
         "soman gas",
         "soman",
         "liquid soman"
     ],
+    "3,3-Dimethylbutan-2-yl methylphosphonofluoridate": [
+        "soman gas",
+        "soman",
+        "liquid soman"
+    ],
     "propane": [
+        "propane molecule",
+        "liquid propane",
+        "propane"
+    ],
+    "C3H8": [
         "propane molecule",
         "liquid propane",
         "propane"
@@ -213,6 +364,10 @@
         "liquid sarin"
     ],
     "silicon dioxide": [
+        "silicon dioxide",
+        "silicon dioxide region semiconductor"
+    ],
+    "SiO2": [
         "silicon dioxide",
         "silicon dioxide region semiconductor"
     ],
@@ -230,7 +385,18 @@
         "liquid cyclosarin",
         "gaseous cyclosarin"
     ],
+    "Cyclohexyl methylphosphonofluoridate": [
+        "cyclosarin",
+        "liquid cyclosarin",
+        "gaseous cyclosarin"
+    ],
     "hydrocyanic acid": [
+        "hydrogen cyanide gas",
+        "liquid hydrocyanic acid",
+        "hydrogen cyanide",
+        "hydrocyanic acid"
+    ],
+    "Formonitrile":[
         "hydrogen cyanide gas",
         "liquid hydrocyanic acid",
         "hydrogen cyanide",

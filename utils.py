@@ -1,6 +1,15 @@
 import sqlite3
 import re
 import numpy as np
+import json
+
+
+def parse_json(ans: str) -> dict:
+    ans = ans.strip()
+    start_idx = ans.find("{")
+    end_idx = ans.rfind("}") + 1
+    ans = ans[start_idx:end_idx]
+    return json.loads(ans)
 
 
 def execute_sql(sql: str, db: str) -> list:

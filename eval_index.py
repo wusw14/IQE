@@ -3,6 +3,7 @@ import numpy as np
 import sys
 import time
 from index import BM25Index, HNSWIndex
+import json
 
 
 # nltk.download("stopwords")
@@ -106,7 +107,7 @@ if __name__ == "__main__":
     print(f"Query time per query: {time_cost:.4f} seconds")
 
     # eval recall
-    # eval_recall(query, results, query_answer, corpus)
+    eval_recall(query, results, query_answer, corpus)
 
     # threshold range
     if index_type != "hybrid":

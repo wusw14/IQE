@@ -6,6 +6,13 @@
         "short beaked echidna",
         "western long beaked echidna"
     ],
+    "spiny anteaters": [
+        "eastern long beaked echidna",
+        "echidna",
+        "long beaked echidna",
+        "short beaked echidna",
+        "western long beaked echidna"
+    ],
     "monkey": [
         "baboon",
         "campbell's monkey",
@@ -40,7 +47,18 @@
         "puerto rican boa",
         "virgin islands tree boa"
     ],
+    "common boa": [
+        "boa constrictor",
+        "puerto rican boa",
+        "virgin islands tree boa"
+    ],
     "rhea": [
+        "american rhea",
+        "darwin's rhea",
+        "rhea",
+        "rhea bird"
+    ],
+    "South American ostrich": [
         "american rhea",
         "darwin's rhea",
         "rhea",
@@ -63,6 +81,12 @@
         "bactrian camel",
         "camel",
         "dromedary"
+    ],
+    "European bison": [
+        "carpathian wisent",
+        "caucasian wisent",
+        "lowland wisent",
+        "wisent"
     ],
     "wisent": [
         "carpathian wisent",
@@ -153,6 +177,12 @@
         "florida salt marsh vole",
         "hualapai mexican vole"
     ],
+    "vole": [
+        "amargosa vole",
+        "field mouse",
+        "florida salt marsh vole",
+        "hualapai mexican vole"
+    ],
     "pangolin": [
         "chinese pangolin",
         "giant pangolin",
@@ -194,6 +224,15 @@
         "guinea pig",
         "skinny pig"
     ],
+    "cavy": [
+        "brazilian guinea pig",
+        "cavia",
+        "cavia anolaimae",
+        "cavia guianae",
+        "cavy",
+        "guinea pig",
+        "skinny pig"
+    ],
     "wildcat": [
         "european wildcat",
         "scottish wildcat",
@@ -225,7 +264,24 @@
         "smooth hammerhead",
         "winghead shark"
     ],
+    "hammerhead": [
+        "bonnethead",
+        "great hammerhead",
+        "hammer head shark",
+        "hammerhead shark",
+        "scalloped hammerhead",
+        "smalleye hammerhead",
+        "smooth hammerhead",
+        "winghead shark"
+    ],
     "eider": [
+        "common eider",
+        "eider",
+        "king eider",
+        "spectacled eider",
+        "steller's eider"
+    ],
+    "large seaduck": [
         "common eider",
         "eider",
         "king eider",
@@ -260,6 +316,26 @@
         "eastern cougar",
         "florida panther"
     ],
+    "puma": [
+        "cougar",
+        "eastern cougar",
+        "florida panther"
+    ],
+    "mountain lion": [
+        "cougar",
+        "eastern cougar",
+        "florida panther"
+    ],
+    "catamount": [
+        "cougar",
+        "eastern cougar",
+        "florida panther"
+    ],
+    "panther": [
+        "cougar",
+        "eastern cougar",
+        "florida panther"
+    ],
     "hoolock gibbon": [
         "eastern hoolock gibbon",
         "hoolock gibbon",
@@ -280,6 +356,18 @@
         "suslik"
     ],
     "widow spider": [
+        "black widow spider",
+        "brown widow",
+        "latrodectus",
+        "latrodectus corallinus",
+        "latrodectus jubatus",
+        "latrodectus lilianae",
+        "latrodectus mactans",
+        "latrodectus tredecimguttatus",
+        "red widow spider",
+        "widow spider"
+    ],
+    "latrodectus": [
         "black widow spider",
         "brown widow",
         "latrodectus",
@@ -320,6 +408,16 @@
         "african savannah elephant"
     ],
     "belgian sheepdog": [
+        "belgian groenendael",
+        "belgian laekenois",
+        "belgian malinois",
+        "belgian sheepdog",
+        "belgian shepherd dog groenendael",
+        "belgian shepherd dog laekenois",
+        "belgian tervuren",
+        "groenendael"
+    ],
+    "belgian shepherd": [
         "belgian groenendael",
         "belgian laekenois",
         "belgian malinois",
@@ -419,13 +517,63 @@
         "toy dachshunds",
         "wire haired dachshund"
     ],
+    "wiener dog": [
+        "adult dachshund",
+        "dachshund",
+        "long haired dachshund",
+        "miniature dachshund",
+        "smooth coated dachshund",
+        "standard dachshund",
+        "standard dachshunds",
+        "toy dachshunds",
+        "wire haired dachshund"
+    ],
+    "badger dog": [
+        "adult dachshund",
+        "dachshund",
+        "long haired dachshund",
+        "miniature dachshund",
+        "smooth coated dachshund",
+        "standard dachshund",
+        "standard dachshunds",
+        "toy dachshunds",
+        "wire haired dachshund"
+    ],
+    "sausage dog": [
+        "adult dachshund",
+        "dachshund",
+        "long haired dachshund",
+        "miniature dachshund",
+        "smooth coated dachshund",
+        "standard dachshund",
+        "standard dachshunds",
+        "toy dachshunds",
+        "wire haired dachshund"
+    ],
     "eared seal": [
         "eared seal",
         "guadalupe fur seal",
         "sea lion",
         "steller sea lion"
     ],
+    "otariid": [
+        "eared seal",
+        "guadalupe fur seal",
+        "sea lion",
+        "steller sea lion"
+    ],
+    "otary": [
+        "eared seal",
+        "guadalupe fur seal",
+        "sea lion",
+        "steller sea lion"
+    ],
     "firefly": [
+        "firefly",
+        "glow worm",
+        "glowworm"
+    ],
+    "glowworm": [
         "firefly",
         "glow worm",
         "glowworm"
@@ -458,6 +606,14 @@
         "perdido key beach mouse",
         "southeastern beach mouse"
     ],
+    "oldfield mouse": [
+        "alabama beach mouse",
+        "anastasia island beach mouse",
+        "beach mouse",
+        "choctawahatchee beach mouse",
+        "perdido key beach mouse",
+        "southeastern beach mouse"
+    ],
     "pony": [
         "assateague pony",
         "juvenile assateague pony",
@@ -466,6 +622,13 @@
         "welsh pony"
     ],
     "reindeer": [
+        "barren ground caribou",
+        "caribou",
+        "peary caribou",
+        "reindeer",
+        "woodland caribou"
+    ],
+    "caribou": [
         "barren ground caribou",
         "caribou",
         "peary caribou",
@@ -496,6 +659,16 @@
         "rook"
     ],
     "rhinoceros": [
+        "black rhinoceros",
+        "indian rhinoceros",
+        "javan rhinoceros",
+        "lesser one horned rhinoceros",
+        "rhinoceros",
+        "sumatran rhinoceros",
+        "white rhinoceros",
+        "woolly rhinoceros"
+    ],
+    "rhino": [
         "black rhinoceros",
         "indian rhinoceros",
         "javan rhinoceros",
@@ -567,6 +740,32 @@
         "water moccasin",
         "western diamondback rattlesnake"
     ],
+    "crotalinae": [
+        "agkistrodon piscivorus",
+        "copperhead",
+        "crotalus lepidus",
+        "crotalus scutulatus",
+        "crotalus tigris",
+        "pit viper",
+        "rattler",
+        "rattlesnake",
+        "sidewinder rattlesnake",
+        "water moccasin",
+        "western diamondback rattlesnake"
+    ],
+    "pit adders": [
+        "agkistrodon piscivorus",
+        "copperhead",
+        "crotalus lepidus",
+        "crotalus scutulatus",
+        "crotalus tigris",
+        "pit viper",
+        "rattler",
+        "rattlesnake",
+        "sidewinder rattlesnake",
+        "water moccasin",
+        "western diamondback rattlesnake"
+    ],
     "ribbed newt": [
         "algerian ribbed newt",
         "iberian ribbed newt",
@@ -580,6 +779,15 @@
         "water snake"
     ],
     "caiman": [
+        "black caiman",
+        "broad snouted caiman",
+        "caiman",
+        "cuvier's dwarf caiman",
+        "smooth fronted caiman",
+        "spectacled caiman",
+        "yacare caiman"
+    ],
+    "cayman": [
         "black caiman",
         "broad snouted caiman",
         "caiman",
@@ -673,7 +881,24 @@
         "sri lankan elephant",
         "sumatran elephant"
     ],
+    "Asiatic elephant": [
+        "asian elephant",
+        "borneo elephant",
+        "indian elephant",
+        "sri lankan elephant",
+        "sumatran elephant"
+    ],
     "recluse spider": [
+        "brown recluse",
+        "chilean recluse",
+        "recluse spider"
+    ],
+    "brown spiders": [
+        "brown recluse",
+        "chilean recluse",
+        "recluse spider"
+    ],
+    "violin spiders": [
         "brown recluse",
         "chilean recluse",
         "recluse spider"
@@ -685,6 +910,10 @@
         "smooth coated chihuahua"
     ],
     "sperm whale": [
+        "aulophyseter",
+        "sperm whale"
+    ],
+    "cachalot": [
         "aulophyseter",
         "sperm whale"
     ],

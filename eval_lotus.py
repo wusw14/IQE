@@ -35,6 +35,7 @@ def parse_args():
         default="weighted",
     )
     parser.add_argument("--exp_name", type=str, default="debug")
+    parser.add_argument("--mode", type=str, default="lotus")
     return parser.parse_args()
 
 
@@ -52,6 +53,7 @@ if __name__ == "__main__":
 
     if args.llm == "llama":
         model_name = "openai/meta-llama/Llama-3.3-70B-Instruct"
+        helper_model_name = "openai/meta-llama/Llama-3.1-8B-Instruct"
         api_key = "llama"
         port = 1117
     elif args.llm == "deepseek":
@@ -60,8 +62,9 @@ if __name__ == "__main__":
         port = 1117
     elif args.llm == "qwen":
         model_name = "openai/Qwen/Qwen2.5-72B-Instruct"
+        helper_model_name = "openai/Qwen/Qwen2.5-7B-Instruct"
         api_key = "qwen-72b"
-        port = 1171
+        port = 1172
     else:
         raise ValueError(f"Invalid LLM: {args.llm}")
     lm = LM(
@@ -72,9 +75,9 @@ if __name__ == "__main__":
         max_batch_size=512,
     )
     helper_lm = LM(
-        model="openai/meta-llama/Llama-3.1-8B-Instruct",
+        model=helper_model_name,
         api_base="http://localhost:1108/v1",
-        api_key="llama",
+        api_key="helper",
         max_tokens=5,
         max_batch_size=512,
     )
@@ -94,7 +97,10 @@ if __name__ == "__main__":
         proxy_model=ProxyModel.HELPER_LM,
     )
     # lotus.settings.configure(lm=lm, rm=rm, vs=vs)
-    lotus.settings.configure(lm=lm, helper_lm=helper_lm)
+    if args.mode == "proxy":
+        lotus.settings.configure(lm=lm, helper_lm=helper_lm)
+    else:
+        lotus.settings.configure(lm=lm)
     # lotus.settings.configure(lm=lm)
 
     args.output_dir = f"results/{args.exp_name}"
@@ -148,8 +154,10 @@ if __name__ == "__main__":
         start_time = time.time()
         instruction = prefix + f" '{query}'."
         print(instruction)
-        df_result = df.sem_filter(instruction, cascade_args=cascade_args)
-        # df_result = df.sem_filter(instruction)
+        if args.mode == "proxy":
+            df_result = df.sem_filter(instruction, cascade_args=cascade_args)
+        else:
+            df_result = df.sem_filter(instruction)
         result = {"query": query, "pred": df_result[attribute].values.tolist()}
         result["answers"] = answers
         result["time"] = time.time() - start_time

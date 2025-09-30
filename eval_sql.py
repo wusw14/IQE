@@ -87,7 +87,7 @@ if __name__ == "__main__":
         if len(answers) == 0:
             continue
         start_time = time.time()
-        df_result = df[df[attribute].str.contains(query, case=False)]
+        df_result = df[df[attribute].str.contains(query, case=False, regex=False)]
         cell_values = df_result[attribute].values.tolist()
         result = {
             "query": query,
