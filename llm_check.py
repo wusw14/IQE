@@ -2,20 +2,19 @@ import openai
 from typing import List
 from concurrent.futures import ThreadPoolExecutor
 from collections import defaultdict
+from dotenv import load_dotenv
+import os
 
-# from appl import ppl, gen, SystemMessage, convo, records, SystemRole
-# from appl.compositor import Tagged, NumberedList, DashList
 
-# from reformulate import refine_query
+load_dotenv(".env")
+model_path = os.getenv("MODEL_PATH")
+port = os.getenv("PORT")
+api_key = os.getenv("API_KEY")
 
 client = openai.OpenAI(
-    base_url="http://localhost:1117/v1",  # vLLM server address
-    api_key="llama",  # dummy token
+    base_url=f"http://localhost:{port}/v1",  # vLLM server address
+    api_key=api_key,
 )
-
-model_path = "meta-llama/Llama-3.3-70B-Instruct"
-# model_path = "Qwen/Qwen2.5-72B-Instruct"
-# model_path = "deepseek-chat"
 
 
 def process_single_prompt(cond: str, col: str, val: str) -> str:
@@ -60,14 +59,11 @@ def llm_check(
     return obj_scores
 
 
-# @ppl
-# def appl_gen(prompt, max_tokens=1024):
-#     prompt
-#     return gen(max_tokens=max_tokens)
-
-
 def run_inference(
-    prompts: List[str], max_tokens=1024, system_prompts: list = None, temperature=0.0
+    prompts: List[str],
+    max_tokens=1024,
+    system_prompts: list = None,
+    temperature=0.0,
 ) -> List[str]:
 
     def generate_completion(prompt, system_prompt=None):

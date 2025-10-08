@@ -1,15 +1,72 @@
-# from lotus.models import OpenAIModel
-import lotus
-from lotus.models import LM, SentenceTransformersRM
 import argparse
 import pandas as pd
 import json
 import os
 from load_data import load_data
 import time
-from lotus.types import CascadeArgs, ProxyModel
+from openai import OpenAI
+from concurrent.futures import ThreadPoolExecutor
+from typing import List
+from transformers import AutoTokenizer
 
-# from lotus.vector_store import FaissVS
+
+def count_tokens_hf(text, model_name="gpt2"):
+    """use Hugging Face tokenizer"""
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokens = tokenizer.encode(text)
+    return len(tokens)
+
+
+def prepare_prompts(query, corpus):
+    parts = 1
+    while True:
+        # split corpus into parts
+        num_parts = (len(corpus) + parts - 1) // parts
+        corpus_parts = [
+            corpus[i * num_parts : (i + 1) * num_parts] for i in range(parts)
+        ]
+        if_within_limit = True
+        prompts = []
+        for corpus_part in corpus_parts:
+            prompt = f"Given the query: {query}\nThe list of candidate table values: {corpus_part}. Please identify which values are the same as or a type of the query. Your response should be a list of values separated by ' | ' without any other text."
+            prompts.append(prompt)
+            if count_tokens_hf(prompt, model_name) > 30000:
+                if_within_limit = False
+                break
+        if if_within_limit:
+            break
+        parts += 1
+    print(f"parts: {parts}")
+    return prompts
+
+
+def run_inference(
+    prompts: List[str], max_tokens=1024, system_prompts: list = None, temperature=0.0
+) -> List[str]:
+
+    def generate_completion(prompt, system_prompt=None):
+        messages = [
+            {"role": "user", "content": prompt},
+        ]
+        if system_prompt:
+            messages.insert(0, {"role": "system", "content": system_prompt})
+        response = client.chat.completions.create(
+            model=model_name,
+            messages=messages,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            seed=42,
+        )
+        return response.choices[0].message.content
+
+    with ThreadPoolExecutor(max_workers=min(100, len(prompts))) as executor:
+        if system_prompts:
+            completions = list(
+                executor.map(generate_completion, prompts, system_prompts)
+            )
+        else:
+            completions = list(executor.map(generate_completion, prompts))
+    return completions
 
 
 def save_results(results, output_path):
@@ -40,22 +97,14 @@ def parse_args():
 
 
 if __name__ == "__main__":
-    # lm = OpenAIModel(
-    #     model="meta-llama/Llama-3.3-70B-Instruct",
-    #     api_base="http://localhost:1117/v1",
-    #     api_key="llama",
-    #     provider="vllm",
-    #     max_tokens=1024,
-    #     max_batch_size=512,
-    # )
     args = parse_args()
     print(args)
 
     if args.llm == "llama":
-        model_name = "openai/meta-llama/Llama-3.3-70B-Instruct"
-        helper_model_name = "openai/meta-llama/Llama-3.1-8B-Instruct"
+        model_name = "meta-llama/Llama-3.3-70B-Instruct"
+        helper_model_name = "meta-llama/Llama-3.1-8B-Instruct"
         api_key = "llama"
-        port = 1117
+        port = 1170
         helper_port = 1108
     elif args.llm == "deepseek":
         model_name = "openai/deepseek-ai/DeepSeek-R1-Distill-Llama-70B"
@@ -63,48 +112,18 @@ if __name__ == "__main__":
         port = 1117
         helper_port = 1107
     elif args.llm == "qwen":
-        model_name = "openai/Qwen/Qwen2.5-72B-Instruct"
-        helper_model_name = "openai/Qwen/Qwen2.5-7B-Instruct"
-        api_key = "qwen-72b"
+        model_name = "Qwen/Qwen2.5-72B-Instruct"
+        helper_model_name = "Qwen/Qwen2.5-7B-Instruct"
+        api_key = "qwen"
         port = 1172
         helper_port = 1107
     else:
         raise ValueError(f"Invalid LLM: {args.llm}")
-    lm = LM(
-        model=model_name,
-        api_base=f"http://localhost:{port}/v1",
-        api_key=api_key,
-        max_tokens=5,
-        max_batch_size=512,
+
+    client = OpenAI(
+        base_url=f"http://localhost:{port}/v1",  # vLLM server address
+        api_key=api_key,  # dummy token
     )
-    helper_lm = LM(
-        model=helper_model_name,
-        api_base=f"http://localhost:{helper_port}/v1",
-        api_key="llama_helper" if args.llm == "llama" else "qwen_helper",
-        max_tokens=5,
-        max_batch_size=512,
-    )
-    # rm = SentenceTransformersRM(
-    #     model="all-MiniLM-L6-v2",
-    #     max_batch_size=512,
-    #     device="cuda",
-    # )
-    # print(rm.transformer.device)
-    # vs = FaissVS()
-    cascade_args = CascadeArgs(
-        recall_target=0.95,
-        precision_target=0.95,
-        sampling_percentage=0.1,
-        failure_probability=0.2,
-        # proxy_model=ProxyModel.EMBEDDING_MODEL,
-        proxy_model=ProxyModel.HELPER_LM,
-    )
-    # lotus.settings.configure(lm=lm, rm=rm, vs=vs)
-    if args.mode == "proxy":
-        lotus.settings.configure(lm=lm, helper_lm=helper_lm)
-    else:
-        lotus.settings.configure(lm=lm)
-    # lotus.settings.configure(lm=lm)
 
     args.output_dir = f"results/{args.exp_name}"
     os.makedirs(args.output_dir, exist_ok=True)
@@ -120,7 +139,6 @@ if __name__ == "__main__":
     # load data
     df, query_answer, query_template, path = load_data(args.dataset)
     args.path = path
-    # TODO: rename the variables
     if args.dataset == "paper":
         batch_size = 1024
         attribute = "abstracts"
@@ -155,13 +173,15 @@ if __name__ == "__main__":
         if len(answers) == 0:
             continue
         start_time = time.time()
-        instruction = prefix + f" '{query}'."
-        print(instruction)
-        if args.mode == "proxy":
-            df_result = df.sem_filter(instruction, cascade_args=cascade_args)
-        else:
-            df_result = df.sem_filter(instruction)
-        result = {"query": query, "pred": df_result[attribute].values.tolist()}
+        prompts = prepare_prompts(query, corpus)
+        responses = run_inference(prompts, max_tokens=2000)
+        preds = []
+        for response in responses:
+            vals = response.split(" | ")
+            vals = [val.strip() for val in vals]
+            preds.extend(vals)
+        preds = list(set(preds))
+        result = {"query": query, "pred": preds}
         result["answers"] = answers
         result["time"] = time.time() - start_time
         results.append(result)

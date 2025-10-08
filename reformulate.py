@@ -242,6 +242,29 @@ def reformulate_old(
     return values
 
 
+def reformulate_simple(
+    cond: str, col: str, value: list, non_linguistic_value: list
+) -> str:
+    system_prompt = "You are an expert database assistant specializing in query expansion and semantic matching."
+    user_prompt = f"""Your task is to generate 2-10 expanded and diversified search terms for the "Original Query Term". Use the example values as format references to maintain consistency with database conventions.
+
+Input:
+Original Query Term: {cond}
+Column: {col}
+Sample Values: {value}
+
+Output: please directly output the generated search terms separated by ' | ' without any other text. If no more terms can be generated, respond with 'None'.
+"""
+    ans = run_inference([user_prompt], system_prompts=[system_prompt])
+    ans = ans[0]
+    print(f"LLM Reformulate: {ans}")
+    values = str(ans).split("|")
+    if "None" in values:
+        return []
+    values = [v.split("\n")[0].strip() for v in values if len(v.strip()) > 0]
+    return values, []
+
+
 # @ppl
 # def gen_score(condition: str, query_list: list):
 #     SystemMessage("You are an expert in scoring the query words in the query list.")

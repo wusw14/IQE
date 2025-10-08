@@ -3,7 +3,7 @@ import json
 import os
 from load_data import load_data
 import time
-from reformulate import reformulate, score_query
+from reformulate import reformulate, score_query, reformulate_simple
 from retrieve import retrieve_corpus
 from iterative_check import llm_check_retrieved_objs
 from query import Query
@@ -28,6 +28,7 @@ def parse_args():
     parser.add_argument("--rethink", action="store_true")
     parser.add_argument("--budget", type=int, default=100)
     parser.add_argument("--tau", type=float, default=0.2)
+    parser.add_argument("--iterative_check", action="store_true")
     parser.add_argument(
         "--reform_type",
         type=str,
@@ -89,32 +90,35 @@ def solve_query(
     checked_obj_dict = {}
     print(f"\n\n\n======Processing Query: [{query.org_query}]=======")
     non_linguistic_values = []
-    # # Step 2: reformulate the query
-    # start_time = time.time()
-    # sample_values, non_linguistic_sample_values = get_sample_values({}, args, attribute)
-    # cur_generated_query_list, non_linguistic_values = reformulate(
-    #     query.org_query,
-    #     attribute,
-    #     sample_values,
-    #     non_linguistic_sample_values,
-    # )
-    # cur_generated_query_list = [
-    #     q for q in cur_generated_query_list if q != query.org_query
-    # ]
-    # query.update_queries_from_generated(cur_generated_query_list)
+    # Step 2: reformulate the query
+    start_time = time.time()
+    sample_values, non_linguistic_sample_values = get_sample_values({}, args, attribute)
+    cur_generated_query_list, non_linguistic_values = reformulate(
+        query.org_query,
+        attribute,
+        sample_values,
+        non_linguistic_sample_values,
+    )
+    cur_generated_query_list = [
+        q for q in cur_generated_query_list if q != query.org_query
+    ]
+    query.update_queries_from_generated(cur_generated_query_list)
     # _, query_scores_new = llm_check_retrieved_objs(
     #     query, cur_generated_query_list, args
     # )
-    # query.update_query_scores(query_scores_new)
-    # reformulate_time += time.time() - start_time
-    # print(f"Time for reformulating: {time.time() - start_time:.4f}s")
+    query_scores_new = {q: 2 for q in cur_generated_query_list}
+    query.update_query_scores(query_scores_new)
+    reformulate_time += time.time() - start_time
+    print(f"Time for reformulating: {time.time() - start_time:.4f}s")
 
     # Step 3: Iteratively refine the query and retrieve the cell values
     early_stop = 0
     step = 0
     last_pos_num = 0
-    # check_num = CHECK_NUM
-    check_num = args.budget
+    if args.iterative_check:
+        check_num = CHECK_NUM
+    else:
+        check_num = args.budget
     while len(query.obj_scores) < args.budget:
         step += 1
         print(f"\n======Step {step}=======")
