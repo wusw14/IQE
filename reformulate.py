@@ -53,10 +53,10 @@ Directly output the generated search terms, separated by |, without any addition
 def identify_identifier_prompt(cond: str):
     # system_prompt = "You are a highly skilled assistant tasked with identifying the identifier in a user's query."
     system_prompt = None
-    user_prompt = f"""Identify any continuous sequence of words in the query phrase that lacks actual semantic meaning. Focus on patterns like random alphanumeric strings, or meaningless character combinations—not grammatical function words (e.g., "the", "in", "of"). 
+    user_prompt = f"""Identify all continuous sequences of words or characters in the given query that do not form standard words in natural language. This includes, but is not limited to, random alphanumeric strings, meaningless character combinations, abbreviations, or codes that lack inherent semantic meaning in natural language.
 
 Query: {cond}
-Output ONLY the meaningless sequence or "None" if no such sequence is found.
+Output ONLY the identified sequence, or "None" if no such sequence is found.
 """
     return system_prompt, user_prompt
 
@@ -176,7 +176,7 @@ def reformulate(cond: str, col: str, value: list, non_linguistic_value: list) ->
         system_prompts.append(system_prompt3)
         user_prompts.append(user_prompt3)
     ans_all = run_inference(user_prompts, system_prompts=system_prompts)
-    print(f"LLM Reformulate Identifier (raw results): {ans_all}")
+    print(f"LLM Reformulate (raw results): {ans_all}")
     ans_synonym, ans_narrower = ans_all[0], ans_all[1]
     if org_id is not None:
         ans_non_linguistic = ans_all[2]
@@ -189,6 +189,9 @@ def reformulate(cond: str, col: str, value: list, non_linguistic_value: list) ->
         non_linguistic_values.append(org_id)
         non_linguistic_values = list(set(non_linguistic_values))
         print(f"LLM Reformulate Non-linguistic: {non_linguistic_values}")
+        non_linguistic_values = [
+            cond.replace(org_id, v) + " ".join([v] * 10) for v in non_linguistic_values
+        ]
     if ans_synonym.strip().lower() != "none":
         synonym_values = ans_synonym.split("|")
     else:

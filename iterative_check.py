@@ -13,12 +13,7 @@ def llm_check_retrieved_objs(query: Query, obj_to_check: list[str], args):
     # new_pos_objs = llm_check(query.org_query, obj_to_check, args.llm_template, {}, 1)
     obj_scores = llm_check(query.org_query, obj_to_check, args.llm_template, {}, 1)
     new_pos_objs = [k for k, v in obj_scores.items() if v >= 1]
-    # obj_scores = {}
-    # for obj in obj_to_check:
-    #     if obj in new_pos_objs:
-    #         obj_scores[obj] = 1
-    #     else:
-    #         obj_scores[obj] = 0
+    print(f"New positive objects: {new_pos_objs}")
 
     new_query_objs = [q for q in new_pos_objs if q not in query.query_scores]
     obj_scores_v2 = score_query(query.query_condition, new_query_objs)

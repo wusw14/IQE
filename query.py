@@ -4,6 +4,9 @@ from scipy.stats import ttest_ind
 from retrieve import RetrievedInfo
 from collections import defaultdict
 from index import BM25Index
+from copy import deepcopy
+import random
+from utils import cal_ndcg
 
 
 def leave_one_out(scores: list[float]) -> float:
@@ -37,6 +40,117 @@ class Query:
         self.obj_to_id = {}
         self.obj_features = {}  # store the features of the checked objects
         self.pred_pos_objs = []
+        self.non_linguistic_values = []
+
+    def score_retrieval(self, queries: list[str], ids: list[int], scores: dict):
+        score_matrix = []
+        for q in queries:
+            score_matrix.append(scores[q])
+        score_matrix = np.array(score_matrix)
+        score = np.max(score_matrix, axis=0)  # [K]
+        # rank the ids
+        sorted_ids, _ = zip(*sorted(zip(ids, score), key=lambda x: x[1], reverse=True))
+        # calculate ndcg with pos_ids
+        ndcg_score = cal_ndcg(sorted_ids, self.pos_ids)
+        return ndcg_score
+
+    def select_query(
+        self,
+        queries: list[str],
+        scores: dict,
+        ids: list[int],
+        non_linguistic_values=None,
+    ):
+        removed_queries, queries_to_check = [], deepcopy(queries)
+        # iteratively remove the query with marginal score <= 0
+        while len(queries_to_check) > 1:
+            retrieval_score = self.score_retrieval(queries_to_check, ids, scores)
+            # score each query
+            query_scores = []
+            for q in queries_to_check:
+                queries_wo_q = [q1 for q1 in queries_to_check if q1 != q]
+                retrieval_score_wo_q = self.score_retrieval(queries_wo_q, ids, scores)
+                query_scores.append(retrieval_score - retrieval_score_wo_q)
+            # get the smallest score
+            min_score = min(query_scores)
+            if min_score > 0:
+                break
+            # remove the query with the smallest score
+            min_idx = query_scores.index(min_score)
+            removed_queries.append(queries_to_check[min_idx])
+            queries_to_check.pop(min_idx)
+        print(f"Removed {len(removed_queries)} queries: {removed_queries}")
+        # add new_queries from table
+        queries_to_check.extend(self.new_queries_from_table)
+        # queries not included in queries_to_check
+        remained_queries = [
+            q
+            for q, s in self.query_scores.items()
+            if s > 1 and q not in queries_to_check
+        ]
+        if non_linguistic_values is not None:
+            remained_queries.extend(non_linguistic_values)
+        # randomly select 10% queries from remained_queries
+        sample_num = min(
+            max(int(len(remained_queries) * 0.1), 2), len(remained_queries)
+        )
+        queries_to_check.extend(
+            random.sample(remained_queries, sample_num) if sample_num > 0 else []
+        )
+        queries_to_check = list(set(queries_to_check))
+        return queries_to_check
+
+    def filter_ids_scores(self, ids: list[int], scores: list[float]):
+        scores = np.array(scores)
+        scores = scores.T  # [K, N]
+        filtered_ids, filtered_scores = [], []
+        for i, s in zip(ids, scores):
+            if i in self.pos_ids or i in self.neg_ids:
+                filtered_ids.append(i)
+                filtered_scores.append(s)  # [K1, N]
+        filtered_scores = np.array(filtered_scores).T  # [N, K1]
+        return filtered_ids, filtered_scores
+
+    def select_bm25_queries(
+        self,
+        retrieved_info: RetrievedInfo,
+        select_query: str,
+        non_linguistic_values: list,
+    ):
+        if select_query == "none" or retrieved_info is None:
+            queries = [
+                q for q, s in self.query_scores.items() if s > 1
+            ] + non_linguistic_values
+            queries = list(set(queries))
+            return queries
+        # evaluate the informativeness of each query and remove the non-informative queries
+        bm25_queries = retrieved_info.bm25_queries  # N
+        bm25_unique_ids = retrieved_info.bm25_unique_ids  # K
+        bm25_pos_scores = retrieved_info.bm25_pos_scores  # [N, K]
+        # only keep the ids that are in pos_ids or neg_ids, and the corresponding scores
+        bm25_ids, bm25_scores = self.filter_ids_scores(bm25_unique_ids, bm25_pos_scores)
+        # filter the queries with max score = 0
+        bm25_max_scores = np.max(bm25_scores, axis=1)
+        queries, scores = [], {}
+        for i, q in enumerate(bm25_queries):
+            if bm25_max_scores[i] > 0:
+                queries.append(q)
+                scores[q] = bm25_scores[i]
+        queries = self.select_query(queries, scores, bm25_ids, non_linguistic_values)
+        return queries
+
+    def select_hnsw_queries(self, retrieved_info: RetrievedInfo, select_query: str):
+        if select_query == "none" or retrieved_info is None:
+            return [q for q, s in self.query_scores.items() if s > 1]
+        # evaluate the informativeness of each query and remove the non-informative queries
+        hnsw_queries = retrieved_info.hnsw_queries  # N
+        hnsw_unique_ids = retrieved_info.hnsw_unique_ids  # K
+        hnsw_pos_scores = retrieved_info.hnsw_pos_scores  # [N, K]
+        # only keep the ids that are in pos_ids or neg_ids, and the corresponding scores
+        hnsw_ids, hnsw_scores = self.filter_ids_scores(hnsw_unique_ids, hnsw_pos_scores)
+        scores = {q: s for q, s in zip(hnsw_queries, hnsw_scores)}
+        queries = self.select_query(hnsw_queries, scores, hnsw_ids)
+        return queries
 
     def select_bm25_query_words(self, select_query):
         if select_query == "none":

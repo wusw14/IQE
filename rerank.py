@@ -24,6 +24,10 @@ def get_next_objs(
         bm25_obj_score_dict[obj] = score
     for i, (obj, score) in enumerate(zip(hnsw_objs, hnsw_agg_pos_scores)):
         hnsw_obj_score_dict[obj] = score
+    # top bm25 objs
+    bm25_objs = sorted(bm25_objs, key=lambda x: bm25_obj_score_dict[x], reverse=True)
+    # top hnsw objs
+    hnsw_objs = sorted(hnsw_objs, key=lambda x: hnsw_obj_score_dict[x], reverse=True)
     for obj in set(bm25_objs) | set(hnsw_objs):
         score1 = bm25_obj_score_dict.get(obj, 0)
         score2 = hnsw_obj_score_dict.get(obj, 0)
@@ -31,8 +35,11 @@ def get_next_objs(
             obj_to_check_scores[obj] = max(score1, score2)
         elif rerank == "equal":
             obj_to_check_scores[obj] = (score1 + score2) / 2
-        elif rerank == "search":
-            obj_to_check_scores[obj] = (score1 + score2) / 2
+        elif rerank == "hybrid":
+            if obj in bm25_objs[:10] or obj in hnsw_objs[:10]:
+                obj_to_check_scores[obj] = 10
+            else:
+                obj_to_check_scores[obj] = (score1 + score2) / 2
     for obj, score in query.obj_scores.items():
         try:
             obj_to_check_scores[obj] = -1
@@ -244,8 +251,8 @@ def rerank_retrieved_objs(
     train_X, train_y, test_X, candidate_objs, train_objs = prepare_data(
         query, bm25_objs, hnsw_objs, bm25_obj_score_dict, hnsw_obj_score_dict
     )
-    bm25_weights = [0.5, 0.5]
-    hnsw_weights = [0.5, 0.5]
+    bm25_weights = [1.0, 0.0]  # [0.5, 0.5]
+    hnsw_weights = [1.0, 0.0]
     train_X, test_X = agg_feature(train_X, test_X, bm25_weights, hnsw_weights)
     test_obj_to_feature = {}
     for obj, feature in zip(candidate_objs, test_X):

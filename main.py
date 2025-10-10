@@ -32,11 +32,11 @@ def parse_args():
     parser.add_argument(
         "--reform_type",
         type=str,
-        default="zero-shot",
-        choices=["zero-shot", "few-shot", "cot"],
+        default="multi-aspect",
+        choices=["multi-aspect", "simple"],
     )
     parser.add_argument(
-        "--rerank", type=str, default="search", choices=["max", "equal", "search"]
+        "--rerank", type=str, default="hybrid", choices=["max", "equal", "hybrid"]
     )
     parser.add_argument(
         "--index_combine_method",
@@ -93,12 +93,24 @@ def solve_query(
     # Step 2: reformulate the query
     start_time = time.time()
     sample_values, non_linguistic_sample_values = get_sample_values({}, args, attribute)
-    cur_generated_query_list, non_linguistic_values = reformulate(
-        query.org_query,
-        attribute,
-        sample_values,
-        non_linguistic_sample_values,
-    )
+    if args.reform_type == "multi-aspect":
+        reformulate_func = reformulate
+    elif args.reform_type == "simple":
+        reformulate_func = reformulate_simple
+    elif args.reform_type == "none":
+        reformulate_func = None
+    else:
+        raise ValueError(f"Invalid reformulate type: {args.reform_type}")
+    if reformulate_func is not None:
+        cur_generated_query_list, non_linguistic_values = reformulate_func(
+            query.org_query,
+            attribute,
+            sample_values,
+            non_linguistic_sample_values,
+        )
+    else:
+        cur_generated_query_list, non_linguistic_values = [], []
+    query.non_linguistic_values = non_linguistic_values
     cur_generated_query_list = [
         q for q in cur_generated_query_list if q != query.org_query
     ]
@@ -119,6 +131,7 @@ def solve_query(
         check_num = CHECK_NUM
     else:
         check_num = args.budget
+    retrieved_info = None
     while len(query.obj_scores) < args.budget:
         step += 1
         print(f"\n======Step {step}=======")
@@ -128,31 +141,25 @@ def solve_query(
         start_time = time.time()
         new_query_objs = query.new_queries_from_generated + query.new_queries_from_table
         new_query_objs = [q for q in new_query_objs if q not in query.query_scores]
-        if step == 1 or last_pos_num > 0:
-            query_list = query.select_diversified_query_words(
-                hnsw_index.emb_model, args.select_query
-            )
-            bm25_queries = (
-                query.select_bm25_query_words(args.select_query) + non_linguistic_values
-            )
-            print(
-                f"Step {step} Diversified query list ({len(query_list)}): {query_list}"
-            )
-            print(f"Step {step} BM25 query list ({len(bm25_queries)}): {bm25_queries}")
-            refine_time += time.time() - start_time
-            print(f"Time for refining: {time.time() - start_time:.4f}s")
+        # TODO: select informative query words from the query list
+        hnsw_queries = query.select_hnsw_queries(retrieved_info, args.select_query)
+        bm25_queries = query.select_bm25_queries(
+            retrieved_info, args.select_query, non_linguistic_values
+        )
+        print(f"Step {step} HNSW query list ({len(hnsw_queries)}): {hnsw_queries}")
+        print(f"Step {step} BM25 query list ({len(bm25_queries)}): {bm25_queries}")
+        refine_time += time.time() - start_time
+        print(f"Time for refining: {time.time() - start_time:.4f}s")
 
         # step 3.2: retrieve the corpus based on the query list
         start_time = time.time()
         retrieved_info = retrieve_corpus(
             bm25_queries,
-            query_list,
+            hnsw_queries,
             corpus,
             args,
             bm25_index,
             hnsw_index,
-            query.pos_ids,
-            [],  # query.neg_ids,
         )
         retrieve_time += time.time() - start_time
         print(f"Time for retrieving: {time.time() - start_time:.4f}s")
@@ -183,8 +190,8 @@ def solve_query(
         print(f"Time for checking: {time.time() - start_time:.4f}s")
 
         last_pos_num = sum([query.query_scores.get(obj, 0) for obj in obj_scores])
-        if last_pos_num == 0:
-            check_num = 2 * check_num
+        # if last_pos_num == 0:
+        #     check_num = 2 * check_num
 
         # if no new positive objs are found, stop
         if (
