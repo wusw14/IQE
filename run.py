@@ -1,9 +1,9 @@
 import os
 
-exp_name = "wo_select"
+exp_name = "uct_v2"
 
 iterative_check = True
-select_type = "none"
+select_type = "both"
 reform_type = "multi-aspect"
 
 for budget in [100, 200, 500]:

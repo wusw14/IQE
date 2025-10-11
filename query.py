@@ -6,7 +6,7 @@ from collections import defaultdict
 from index import BM25Index
 from copy import deepcopy
 import random
-from utils import cal_ndcg
+from utils import cal_ndcg, uct_selection
 
 
 def leave_one_out(scores: list[float]) -> float:
@@ -41,6 +41,11 @@ class Query:
         self.obj_features = {}  # store the features of the checked objects
         self.pred_pos_objs = []
         self.non_linguistic_values = []
+        self.last_obj_ids = []
+        self.bm25_query_credits = defaultdict(int)
+        self.hnsw_query_credits = defaultdict(int)
+        self.bm25_query_visits = defaultdict(int)
+        self.hnsw_query_visits = defaultdict(int)
 
     def score_retrieval(self, queries: list[str], ids: list[int], scores: dict):
         score_matrix = []
@@ -111,6 +116,25 @@ class Query:
         filtered_scores = np.array(filtered_scores).T  # [N, K1]
         return filtered_ids, filtered_scores
 
+    def filter_sim_scores(self, unique_ids: list[int], scores: list[list[float]]):
+        scores = np.array(scores)
+        query_sim_thrs = []
+        for i in range(scores.shape[1]):
+            thr = np.sort(scores[:, i])[::-1][len(self.obj_scores) - 1]
+            thr = max(thr, 1e-6)
+            query_sim_thrs.append(thr)
+        query_sim_scores = defaultdict(list)
+        filtered_ids = []
+        for id, score in zip(unique_ids, scores):
+            if id in self.last_obj_ids:
+                max_score = np.max(score)
+                if max_score > 0:
+                    filtered_ids.append(id)
+                    for idx, s in enumerate(score):
+                        query_sim_scores[idx].append(s)
+        print(f"Filtered ids: {len(filtered_ids)}")
+        return query_sim_thrs, query_sim_scores, filtered_ids
+
     def select_bm25_queries(
         self,
         retrieved_info: RetrievedInfo,
@@ -127,16 +151,32 @@ class Query:
         bm25_queries = retrieved_info.bm25_queries  # N
         bm25_unique_ids = retrieved_info.bm25_unique_ids  # K
         bm25_pos_scores = retrieved_info.bm25_pos_scores  # [N, K]
-        # only keep the ids that are in pos_ids or neg_ids, and the corresponding scores
-        bm25_ids, bm25_scores = self.filter_ids_scores(bm25_unique_ids, bm25_pos_scores)
-        # filter the queries with max score = 0
-        bm25_max_scores = np.max(bm25_scores, axis=1)
-        queries, scores = [], {}
+        cnt = 0
         for i, q in enumerate(bm25_queries):
-            if bm25_max_scores[i] > 0:
+            if np.max(bm25_pos_scores[i]) <= 0:
+                self.bm25_query_credits[q] = -1e6
+                cnt += 1
+            if q not in self.bm25_query_visits:
+                self.bm25_query_visits[q] = 1e-6
+        if cnt == len(bm25_queries):
+            return [self.org_query]
+        bm25_scores = np.array(bm25_pos_scores).T  # [K, N]
+        query_sim_thrs, query_sim_scores, filtered_ids = self.filter_sim_scores(
+            bm25_unique_ids, bm25_scores
+        )
+        for idx, q in enumerate(bm25_queries):
+            sim = query_sim_thrs[idx]
+            sim_scores = query_sim_scores[idx]
+            for s, obj_id in zip(sim_scores, filtered_ids):
+                if s >= sim:
+                    self.bm25_query_visits[q] += 1
+                    if obj_id in self.pos_ids:
+                        self.bm25_query_credits[q] += 1
+        # get top queries with UCT selection
+        queries = uct_selection(self.bm25_query_credits, self.bm25_query_visits)
+        for q in self.new_queries_from_table:
+            if q not in queries and self.bm25_query_visits.get(q, 0) < 1:
                 queries.append(q)
-                scores[q] = bm25_scores[i]
-        queries = self.select_query(queries, scores, bm25_ids, non_linguistic_values)
         return queries
 
     def select_hnsw_queries(self, retrieved_info: RetrievedInfo, select_query: str):
@@ -146,10 +186,30 @@ class Query:
         hnsw_queries = retrieved_info.hnsw_queries  # N
         hnsw_unique_ids = retrieved_info.hnsw_unique_ids  # K
         hnsw_pos_scores = retrieved_info.hnsw_pos_scores  # [N, K]
-        # only keep the ids that are in pos_ids or neg_ids, and the corresponding scores
-        hnsw_ids, hnsw_scores = self.filter_ids_scores(hnsw_unique_ids, hnsw_pos_scores)
-        scores = {q: s for q, s in zip(hnsw_queries, hnsw_scores)}
-        queries = self.select_query(hnsw_queries, scores, hnsw_ids)
+        hnsw_scores = np.array(hnsw_pos_scores).T  # [K, N]
+        for q in hnsw_queries:
+            if q not in self.hnsw_query_visits:
+                self.hnsw_query_visits[q] = 1e-6
+        query_sim_thrs, query_sim_scores, filtered_ids = self.filter_sim_scores(
+            hnsw_unique_ids, hnsw_scores
+        )
+        sim_matrix = []
+        for idx, q in enumerate(hnsw_queries):
+            sim_matrix.append(query_sim_scores[idx])  # [N, K1]
+        sim_matrix = np.array(sim_matrix)
+        for idx, q in enumerate(hnsw_queries):
+            sim = query_sim_thrs[idx]
+            sim_scores = query_sim_scores[idx]
+            for j, (s, obj_id) in enumerate(zip(sim_scores, filtered_ids)):
+                if s >= sim:
+                    self.hnsw_query_visits[q] += 1
+                    if obj_id in self.pos_ids and s == np.max(sim_matrix[:, j]):
+                        self.hnsw_query_credits[q] += 1
+        # get top queries with UCT selection
+        queries = uct_selection(self.hnsw_query_credits, self.hnsw_query_visits)
+        for q in self.new_queries_from_table:
+            if q not in queries and self.hnsw_query_visits.get(q, 0) < 1:
+                queries.append(q)
         return queries
 
     def select_bm25_query_words(self, select_query):
@@ -367,3 +427,4 @@ class Query:
                     neg_ids.append(neg_id)
         self.pos_ids.extend(pos_ids)
         self.neg_ids.extend(neg_ids)
+        self.last_obj_ids = pos_ids + neg_ids

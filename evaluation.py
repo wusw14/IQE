@@ -35,6 +35,7 @@ if __name__ == "__main__":
     result_data = json.load(
         open(f"results/{exp_name}/{dataset_name}_{method}.json", "r")
     )
+    print(f"size of result_data: {len(result_data)}")
     # result_data = {d["query"]: d["pred"] for d in result_data}
     # gt_data = json.load(open(f"{result_dir}/{method}/{dataset_name}_refined.json", "r"))
     # gt_data = {d["query"]: d["answers"] for d in gt_data}
@@ -109,11 +110,11 @@ if __name__ == "__main__":
         ndcg_list.append(ndcg)
         if retrieve_recall < 1:
             print(f"Query: {query}")
-            print(f"Precision: {precision:.4f}, Recall: {recall:.4f}, F1: {f1:.4f}")
+            # print(f"Precision: {precision:.4f}, Recall: {recall:.4f}, F1: {f1:.4f}")
             print(f"Retrieved Recall: {retrieve_recall:.4f}")
-            print(f"NDCG: {ndcg:.4f}")
-            print(f"Pred: {pred}")
-            print(f"GT: {gt}")
+            # print(f"NDCG: {ndcg:.4f}")
+            # print(f"Pred: {pred}")
+            # print(f"GT: {gt}")
             print(f"Missed: {missed}")
             print("==========================")
         pre_list.append(precision)

@@ -259,7 +259,7 @@ def rerank_retrieved_objs(
         test_obj_to_feature[obj] = list(np.round(feature, 4))
 
     # search the best score function
-    if pos_num > 0 and args.rerank == "search":
+    if pos_num > 0 and args.rerank == "hybrid":
         best_w1, best_w2, train_score = search_best_params(train_X, train_y)
         print(f"best_w1: {best_w1:.2f}, best_w2: {best_w2:.2f}")
     elif args.rerank == "equal":

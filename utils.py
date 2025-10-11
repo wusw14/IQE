@@ -78,3 +78,17 @@ def cal_ndcg(sorted_ids, pos_ids) -> float:
     for i, id in enumerate(pos_ids):
         idcg += 1 / np.log2(i + 2)
     return dcg / idcg
+
+
+def uct_selection(credits: dict, visits: dict) -> list:
+    query_scores = {}
+    total_visits = sum(visits.values())
+    for q, n in visits.items():
+        n = max(n, 1)
+        w = credits.get(q, 0)
+        score = w / n + np.sqrt(1e-4 * np.log(total_visits) / n)
+        query_scores[q] = score
+        print(f"q: {q}, score: {score:.4f}, w: {w}, n: {n}")
+    print("=================")
+    query_scores = sorted(query_scores.items(), key=lambda x: x[1], reverse=True)
+    return [q for q, _ in query_scores][:5]

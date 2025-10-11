@@ -190,7 +190,8 @@ def reformulate(cond: str, col: str, value: list, non_linguistic_value: list) ->
         non_linguistic_values = list(set(non_linguistic_values))
         print(f"LLM Reformulate Non-linguistic: {non_linguistic_values}")
         non_linguistic_values = [
-            cond.replace(org_id, v) + " ".join([v] * 10) for v in non_linguistic_values
+            cond.replace(org_id, v) + " " + " ".join([v] * 10)
+            for v in non_linguistic_values
         ]
     if ans_synonym.strip().lower() != "none":
         synonym_values = ans_synonym.split("|")
@@ -203,7 +204,7 @@ def reformulate(cond: str, col: str, value: list, non_linguistic_value: list) ->
     linguistic_values = [
         v.split("\n")[0].strip()
         for v in synonym_values + narrower_values
-        if len(v.strip()) > 0
+        if len(v.split("\n")[0].strip()) > 0
     ]
     linguistic_values = list(set(linguistic_values))
     print(f"LLM Reformulate Linguistic: {linguistic_values}")
