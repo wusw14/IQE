@@ -36,8 +36,8 @@ def get_next_objs(
         elif rerank == "equal":
             obj_to_check_scores[obj] = (score1 + score2) / 2
         elif rerank == "hybrid":
-            if obj in bm25_objs[:10] or obj in hnsw_objs[:10]:
-                obj_to_check_scores[obj] = 10
+            if obj in bm25_objs[: check_num // 3] or obj in hnsw_objs[: check_num // 3]:
+                obj_to_check_scores[obj] = 10 + (score1 + score2) / 2
             else:
                 obj_to_check_scores[obj] = (score1 + score2) / 2
     for obj, score in query.obj_scores.items():

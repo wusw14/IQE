@@ -1,6 +1,6 @@
 import os
 
-exp_name = "uct_v2"
+exp_name = "uct_v5"
 
 iterative_check = True
 select_type = "both"

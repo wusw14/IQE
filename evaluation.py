@@ -40,6 +40,29 @@ if __name__ == "__main__":
     # gt_data = json.load(open(f"{result_dir}/{method}/{dataset_name}_refined.json", "r"))
     # gt_data = {d["query"]: d["answers"] for d in gt_data}
 
+    # # just for debug
+    # filtered_queries = []
+    # baseline_results = json.load(
+    #     open(f"results/wo_select_v3_B100/{dataset_name}_weighted.json", "r")
+    # )
+    # filtered_queries = [
+    #     d["query"]
+    #     for d in baseline_results
+    #     if len(set(d["answers"]) - set(d["retrieved"])) > 0
+    # ]
+    # baseline_query_recall = {}
+    # baseline_results = json.load(
+    #     open(f"results/wo_select_v3_B500/{dataset_name}_weighted.json", "r")
+    # )
+    # for d in baseline_results:
+    #     query = d["query"]
+    #     if query not in filtered_queries:
+    #         continue
+    #     baseline_query_recall[query] = len(
+    #         set(d["answers"]) & set(d["retrieved"])
+    #     ) / len(d["answers"])
+    # print(f"filtered queries: {len(filtered_queries)}")
+
     if dataset_name == "paper":
         corpus = df["abstracts"].values.tolist()
         batch_size = 1024
@@ -64,6 +87,8 @@ if __name__ == "__main__":
             break
         cnt += 1
         query = d["query"]
+        # if query not in filtered_queries:
+        #     continue
         # gt = d["answers"]
         gt = query_answer.get(query, [])
         # gt = gt_data.get(query, [])
@@ -108,10 +133,13 @@ if __name__ == "__main__":
         ndcg = cal_ndcg(retrieved, gt)
         retrieve_recall_list.append(retrieve_recall)
         ndcg_list.append(ndcg)
-        if retrieve_recall < 1:
+        if retrieve_recall < 1:  # and retrieve_recall < baseline_query_recall.get(
+            #     query, 1
+            # ):
             print(f"Query: {query}")
             # print(f"Precision: {precision:.4f}, Recall: {recall:.4f}, F1: {f1:.4f}")
             print(f"Retrieved Recall: {retrieve_recall:.4f}")
+            # print(f"Baseline Recall: {baseline_query_recall.get(query, 1):.4f}")
             # print(f"NDCG: {ndcg:.4f}")
             # print(f"Pred: {pred}")
             # print(f"GT: {gt}")

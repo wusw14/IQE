@@ -228,6 +228,18 @@ if __name__ == "__main__":
     args = parse_args()
     print(args)
 
+    # # just for debug
+    # filtered_queries = []
+    # baseline_results = json.load(
+    #     open(f"results/wo_select_v3_B100/{args.dataset}_weighted.json", "r")
+    # )
+    # filtered_queries = [
+    #     d["query"]
+    #     for d in baseline_results
+    #     if len(set(d["answers"]) - set(d["retrieved"])) > 0
+    # ]
+    # print(f"filtered queries: {len(filtered_queries)}")
+
     args.output_dir = f"results/{args.exp_name}"
     os.makedirs(args.output_dir, exist_ok=True)
     output_path = os.path.join(
@@ -280,6 +292,8 @@ if __name__ == "__main__":
     )
     cnt = 0
     for query, answers in query_answer.items():
+        # if query not in filtered_queries:
+        #     continue
         if query in processed_queries:
             continue
         if len(answers) == 0:

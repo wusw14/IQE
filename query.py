@@ -154,7 +154,7 @@ class Query:
         cnt = 0
         for i, q in enumerate(bm25_queries):
             if np.max(bm25_pos_scores[i]) <= 0:
-                self.bm25_query_credits[q] = -1e6
+                self.bm25_query_visits[q] = 1e6
                 cnt += 1
             if q not in self.bm25_query_visits:
                 self.bm25_query_visits[q] = 1e-6
@@ -167,11 +167,20 @@ class Query:
         for idx, q in enumerate(bm25_queries):
             sim = query_sim_thrs[idx]
             sim_scores = query_sim_scores[idx]
+            credit, visit = 0, 0
             for s, obj_id in zip(sim_scores, filtered_ids):
                 if s >= sim:
                     self.bm25_query_visits[q] += 1
+                    visit += 1
                     if obj_id in self.pos_ids:
-                        self.bm25_query_credits[q] += 1
+                        credit += 1
+            new_credit = credit / visit if visit > 0 else 0
+            if q in self.bm25_query_credits:
+                self.bm25_query_credits[q] = (
+                    self.bm25_query_credits[q] + new_credit
+                ) / 2
+            else:
+                self.bm25_query_credits[q] = new_credit
         # get top queries with UCT selection
         queries = uct_selection(self.bm25_query_credits, self.bm25_query_visits)
         for q in self.new_queries_from_table:
@@ -200,11 +209,20 @@ class Query:
         for idx, q in enumerate(hnsw_queries):
             sim = query_sim_thrs[idx]
             sim_scores = query_sim_scores[idx]
+            credit, visit = 0, 0
             for j, (s, obj_id) in enumerate(zip(sim_scores, filtered_ids)):
                 if s >= sim:
                     self.hnsw_query_visits[q] += 1
+                    visit += 1
                     if obj_id in self.pos_ids and s == np.max(sim_matrix[:, j]):
-                        self.hnsw_query_credits[q] += 1
+                        credit += 1
+            new_credit = credit / visit if visit > 0 else 0
+            if q in self.hnsw_query_credits:
+                self.hnsw_query_credits[q] = (
+                    self.hnsw_query_credits[q] + new_credit
+                ) / 2
+            else:
+                self.hnsw_query_credits[q] = new_credit
         # get top queries with UCT selection
         queries = uct_selection(self.hnsw_query_credits, self.hnsw_query_visits)
         for q in self.new_queries_from_table:
