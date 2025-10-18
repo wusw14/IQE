@@ -33,7 +33,7 @@ def parse_args():
         "--reform_type",
         type=str,
         default="multi-aspect",
-        choices=["multi-aspect", "simple"],
+        choices=["multi-aspect", "simple", "none"],
     )
     parser.add_argument(
         "--rerank", type=str, default="hybrid", choices=["max", "equal", "hybrid"]
@@ -166,7 +166,7 @@ def solve_query(
 
         # step 3.3: rerank the retrieved objs and select the objs to be checked
         start_time = time.time()
-        obj_to_check = rerank_retrieved_objs(
+        obj_to_check, stop_flag = rerank_retrieved_objs(
             query,
             retrieved_info,
             args,
@@ -202,7 +202,12 @@ def solve_query(
                 or len(obj_to_check) == 0
             )
         ):
-            break
+            early_stop += stop_flag + 1
+            if stop_flag == 1:
+                print(f"Early stop at step {step}")
+                break
+        else:
+            early_stop = 0
 
     return {
         "query": query.org_query,

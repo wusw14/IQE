@@ -183,31 +183,14 @@ def determine_check_num_and_threshold(train_y, train_score, tau, alpha):
     sorted_score, sorted_y = zip(
         *sorted(zip(train_score, train_y), key=lambda x: x[0], reverse=True)
     )
-    last_pos_position = -1
-    last_pos_score = -1
-    position_diff_list = []
-    score_diff_list = []
-    score_diff = None
-    score_diff_max = tau
-    min_pos_score = 1
+    pos_scores = []
     for i, (score, y) in enumerate(zip(sorted_score, sorted_y)):
         if y > 0:
-            position_diff_list.append(i - last_pos_position)
-            last_pos_position = i
-            if last_pos_score - score > 0:
-                if score_diff is None:
-                    score_diff = last_pos_score - score
-                else:
-                    score_diff = (score_diff + last_pos_score - score) / 2
-                score_diff_max = max(score_diff_max, last_pos_score - score)
-            score_diff_list.append(max(last_pos_score - score, 0))
-            last_pos_score = min(score, 2)
-            min_pos_score = min(min_pos_score, score)
-    if score_diff is None:
-        score_diff = 0
-    # threshold = min_pos_score - 1.96 * np.std(score_diff_list)
-    print(f"score_diff_max: {score_diff_max:.4f}")
-    threshold = min_pos_score - alpha * score_diff_max
+            pos_scores.append(score)
+    if len(pos_scores) < 3:
+        threshold = -1
+    else:
+        threshold = min(pos_scores) - 1.65 * np.std(pos_scores)
     return threshold
 
 
@@ -246,7 +229,7 @@ def rerank_retrieved_objs(
             check_num,
             args.rerank,
         )
-        return obj_to_check
+        return obj_to_check, False
 
     train_X, train_y, test_X, candidate_objs, train_objs = prepare_data(
         query, bm25_objs, hnsw_objs, bm25_obj_score_dict, hnsw_obj_score_dict
@@ -292,11 +275,12 @@ def rerank_retrieved_objs(
     #     json.dump(obj_score_to_save, f, indent=4)
     obj_to_check = []
     for i, (obj, score) in enumerate(sorted_obj_score):
-        if (
-            args.early_stop
-            and (score > threshold or i < 100 - len(query.obj_scores))
-            and i < min(args.budget - len(query.obj_scores), MAX_CHECK_NUM)
-        ) or (not args.early_stop and i < check_num):
+        # if (
+        #     args.early_stop
+        #     and (score > threshold or i < 100 - len(query.obj_scores))
+        #     and i < min(args.budget - len(query.obj_scores), MAX_CHECK_NUM)
+        # ) or (not args.early_stop and i < check_num):
+        if i < check_num:
             obj_to_check.append(obj)
         else:
             break
@@ -304,4 +288,4 @@ def rerank_retrieved_objs(
         print(
             f"obj: {obj}, score: {obj_score[obj]:.2f}, feature: {test_obj_to_feature[obj]}"
         )
-    return obj_to_check
+    return obj_to_check, score < threshold
