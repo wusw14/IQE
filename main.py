@@ -25,6 +25,7 @@ def parse_args():
     parser.add_argument("--steps", type=int, default=5)
     parser.add_argument("--alpha", type=float, default=1)
     parser.add_argument("--early_stop", action="store_true")
+    parser.add_argument("--stop_iter", type=int, default=1)
     parser.add_argument("--rethink", action="store_true")
     parser.add_argument("--budget", type=int, default=100)
     parser.add_argument("--tau", type=float, default=0.2)
@@ -46,10 +47,7 @@ def parse_args():
     )
     parser.add_argument("--exp_name", type=str, default="debug")
     parser.add_argument(
-        "--select_query",
-        type=str,
-        default="reliable",
-        choices=["none", "diversified", "reliable", "both"],
+        "--select_query", type=str, default="uct", choices=["none", "random", "uct"]
     )
     return parser.parse_args()
 

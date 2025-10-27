@@ -1,13 +1,14 @@
 import os
 
-exp_name = "early_stop_v2"
+exp_name = "uct"
 
 iterative_check = True
-select_type = "both"
+select_type = "uct"
 reform_type = "multi-aspect"
-early_stop = True
+early_stop = False
+stop_iter = 4
 
-for budget in [100, 200, 500][1:]:
+for budget in [100, 200, 500]:
     k = budget
     for dataset in ["animal", "chemical_compound", "product"]:
         cmd = f"python -u main.py --dataset {dataset} --exp_name {exp_name}_B{budget} --budget {budget} --k {k}"
@@ -17,6 +18,7 @@ for budget in [100, 200, 500][1:]:
         cmd += f" --select_query {select_type}"
         if early_stop:
             cmd += f" --early_stop"
+            cmd += f" --stop_iter {stop_iter}"
         if not os.path.exists(f"logs/{exp_name}"):
             os.makedirs(f"logs/{exp_name}")
         cmd += f" > logs/{exp_name}/{dataset}_B{budget}.log"

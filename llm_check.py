@@ -77,7 +77,7 @@ def run_inference(
             messages=messages,
             max_tokens=max_tokens,
             temperature=temperature,
-            seed=42,
+            seed=42 if temperature == 0 else None,
         )
         return response.choices[0].message.content
 

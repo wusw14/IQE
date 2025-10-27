@@ -147,6 +147,12 @@ class Query:
             ] + non_linguistic_values
             queries = list(set(queries))
             return queries
+        elif select_query == "random":
+            candidates = [
+                q for q, s in self.query_scores.items() if s > 1
+            ] + non_linguistic_values
+            candidates = list(set(candidates))
+            return random.sample(candidates, min(len(candidates), 5))
         # evaluate the informativeness of each query and remove the non-informative queries
         bm25_queries = retrieved_info.bm25_queries  # N
         bm25_unique_ids = retrieved_info.bm25_unique_ids  # K
@@ -191,6 +197,10 @@ class Query:
     def select_hnsw_queries(self, retrieved_info: RetrievedInfo, select_query: str):
         if select_query == "none" or retrieved_info is None:
             return [q for q, s in self.query_scores.items() if s > 1]
+        elif select_query == "random":
+            candidates = [q for q, s in self.query_scores.items() if s > 1]
+            candidates = list(set(candidates))
+            return random.sample(candidates, min(len(candidates), 5))
         # evaluate the informativeness of each query and remove the non-informative queries
         hnsw_queries = retrieved_info.hnsw_queries  # N
         hnsw_unique_ids = retrieved_info.hnsw_unique_ids  # K
