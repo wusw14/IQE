@@ -2,93 +2,52 @@
 # from appl.compositor import Tagged, NumberedList, DashList
 from llm_check import run_inference
 from utils import parse_json
-import random
-import numpy as np
-import re
 
 
-def reformulate_synonym_prompt(
-    cond: str, attribute: str, obj_scores: dict, sample_objs: list
-):
-    pos_objs = [obj for obj, score in obj_scores.items() if score > 0]
-    # sample_objs = list(obj_scores.keys())[:10]
-    # print("sample_objs: ", sample_objs)
+def reformulate_synonym_prompt(cond: str, col: str, value: list, history: list = []):
+    system_prompt = "You are an expert database assistant specializing in query expansion and semantic matching."
+    user_prompt = f"""
+Your task is to generate semantically equivalent search terms for the 'Original Query Term'.
 
-    prompt = f"""You are a linguistic expert specializing in lexical semantics and data augmentation. Your goal is to generate 1 to 5 alternative terms (Synonyms/Aliases) for a given [Query Term] that can be used interchangeably in the specified data column.
+Instructions:
+1. Analyze the query's core concept and identify conceptual synonyms, aliases, abbreviations and alternative terminology
+2. Ensure the generated search terms are meaningfully diversified and avoid repeating identical or overly similar terms. Generate 1 to 5 values, depending on the availability of appropriate alternatives.
+3. Preserve the non-linguistic characters (e.g., symbols, numbers, formatting) in the original query term.
+4. Use the Sample Values as format references to ensure consistency with database conventions.
+5. If fewer than 5 meaningful and relevant terms can be generated, only output the appropriate number of terms.
 
-<Format_Requirement>
-- OUTPUT ONLY the generated terms separated by |.
-- DO NOT include any introduction, explanation, commentary, or punctuation outside of the '|' separator.
-- If absolutely no strict equivalent meets all constraints, output exactly: None
-- Strictly follow this output pattern: term1 | term2 | term3
-</Format_Requirement>
-
-<Constraints>
-1. Strict Semantic Equivalence & Aliases: Every generated term must be a strict synonym, common alias, abbreviation, or alternative phrasing that represents the EXACT SAME entity or concept as the [Query Term] within this context. 
-   - CRITICAL: Do NOT generate hypernyms (broader terms) or hyponyms (narrower terms).
-2. Column-Data Alignment: Match the exact formatting, casing, data type, and domain style of the [Sampled Table Values].
-3. Lexical Diversity: The generated terms must be distinct from each other. No synonyms of each other, and no morphological variations.
-4. Quality over Quantity: Generate up to 5 terms. Because strict synonyms with distinct roots are rare, quality is prioritized over quantity. If you can only find 1 or 2 compliant terms, ONLY output those. Do not force-fill or compromise constraints to reach 5.
-</Constraints>
-
-<Task_Execution_Steps>
-Before generating the final output, mentally perform these steps:
-1. Brainstorm strict synonyms/aliases for the [Query Term].
-2. Filter out ANY candidate that shares a root word, stem, or base form with the [Query Term] or [Existing Matches].
-3. Filter out any term that is broader or narrower in meaning.
-4. From the remaining fully compliant terms, select up to 5 and output them directly, separated by |.
-</Task_Execution_Steps>
-
-# Input Data
-Query Term: {cond}
-Column: {attribute}
-Sampled Table Values: {sample_objs}
+Input:
+Original Query Term: {cond}
+Column: {col}
+Sample Values: {value}
 
 Output:
+Directly output the generated search terms, separated by |, without any additional text.
 """
-    return prompt
+    return system_prompt, user_prompt
 
 
-def reformulate_narrower_prompt(
-    cond: str, attribute: str, obj_scores: dict, sample_objs: list
-):
-    # pos objs
-    pos_objs = [obj for obj, score in obj_scores.items() if score > 0]
-    # neg_objs = [obj for obj, score in obj_scores.items() if score == 0]
-    # sample_objs = pos_objs[:5] + neg_objs[:5]
+def reformulate_narrower_prompt(cond: str, col: str, value: list, history: list = []):
+    system_prompt = "You are an expert database assistant specializing in query expansion and semantic matching."
+    user_prompt = f"""
+Your task is to generate search terms that are more specific instances/subtypes of the original query term.
 
-    prompt = f"""You are a taxonomy expert specializing in data augmentation. Your task is to generate 1 to 5 specific instances/subtypes of the [Query Term].
+Instructions:
+1. Analyze the query's core concept and identify more specific instances/subtypes of the original query term
+2. Ensure the generated search terms are meaningfully diversified and avoid repeating identical or overly similar terms. Generate 1 to 5 values, depending on the availability of appropriate alternatives.
+3. Preserve the non-linguistic characters (e.g., symbols, numbers, formatting) in the original query term.
+4. Use the Sample Values as format references to ensure consistency with database conventions.
+5. If fewer than 5 meaningful and relevant terms can be generated, only output the appropriate number of terms.
 
-<Format_Requirement>
-- OUTPUT ONLY the generated terms separated by |.
-- DO NOT include any introduction, explanation, commentary, or punctuation outside of the '|' separator.
-- If no valid term can be generated under the strict constraints, output exactly: None
-- Strictly follow this output pattern: term1 | term2 | term3
-</Format_Requirement>
-
-<Constraints>
-1. Semantic Subtype: Every generated term must be a true specific instance or subtype of the [Query Term].
-2. Column-Data Alignment: Match the exact formatting, casing, data type, and domain style of the [Sampled Table Values].
-3. Diversity: The generated terms must be distinct from each other. No synonyms or morphological variations.
-4. Quality over Quantity: Generate up to 5 terms. If you can only find 1 or 2 high-quality terms that perfectly meet all constraints, ONLY output those. Do not force-fill to 5.
-</Constraints>
-
-<Task_Execution_Steps>
-Before generating the final output, mentally perform these steps:
-1. Brainstorm candidate subtypes of [Query Term].
-2. Filter out ANY candidate that shares a root word/stem with [Query Term] or [Existing Subtypes/Specific Instances].
-3. Select the remaining compliant terms (up to 5).
-4. Output them directly, separated by |.
-</Task_Execution_Steps>
-
-# Input Data
-Query Term: {cond}
-Column: {attribute}
-Sampled Table Values: {sample_objs}
+Input:
+Original Query Term: {cond}
+Column: {col}
+Sample Values: {value}
 
 Output:
+Directly output the generated search terms, separated by |, without any additional text.
 """
-    return prompt
+    return system_prompt, user_prompt
 
 
 def identify_identifier_prompt(cond: str):
@@ -208,15 +167,13 @@ Directly output the answer (Specific | Too Broad | Other), without any other tex
 
 
 def identify_synonym_prompt(cond: str, obj_pos: list):
-    prompt = f"""Objective: Determine whether there exists a synonym/alias/alternative term for the Query Term that is semantically equivalent, but is lexically distinct from the Query Term itself and also distinct from each of the provided Aligned Values.
+    prompt = f"""Objective: Identify the existence of "lexically distinct" synonyms.
 
 Input:
 Query Term: {cond}
 Aligned Values: {obj_pos}
 
-A "lexically distinct" synonym/alias/alternative term means it shares no obvious long substring with the Query Term.
-
-Answer "Yes" if such a synonym/alias/alternative term exists. Answer "No" if the Query Term has no other significantly different synonym/alias/alternative term besides itself and the Aligned Values. Answer "Unsure" if uncertain.
+Does there exist a synonym for the Query Term that is semantically equivalent but lexically distinct (significantly different expression) from both the Query Term and the provided Aligned Values?
 
 Directly output the answer (Yes | No | Unsure), without any other text.
 """
@@ -246,16 +203,13 @@ def identify_semantic_gap(cond: str, obj_scores: dict):
     print(f"concept hierarchy response: {concept_hierarchy_response}")
     print(f"synonym response: {synonym_response}")
     gap_list = []
-    if (
-        format_response.strip().lower().startswith("none") == False
-        and format_response.strip().lower() != cond.lower()
-    ):
+    if format_response.strip().lower().startswith("none") == False:
         gap_list.append("format")
-    if concept_hierarchy_response.strip().lower() == "too broad":
+    if concept_hierarchy_response.strip().lower() != "too broad":
         gap_list.append("concept")
     if synonym_response.strip().lower() == "yes":
         gap_list.append("synonym")
-    return gap_list, format_response
+    return gap_list
 
 
 def reformulate_old(
@@ -338,137 +292,18 @@ def reformulate_old(
     return linguistic_values, non_linguistic_values
 
 
-def generate_variations(org_str: str) -> list:
-    org_str = org_str.replace(".", " ")
-    org_str = org_str.replace("-", " ")
-    org_str = org_str.replace("_", " ")
-    variants = []
-    # if space not in org_str, randomly insert two spaces
-    if " " not in org_str:
-        for _ in range(3):
-            str_len = len(org_str)
-            indices = np.random.randint(1, str_len, 2)
-            indices.sort()
-            new_str = (
-                org_str[: indices[0]]
-                + " "
-                + org_str[indices[0] : indices[1]]
-                + " "
-                + org_str[indices[1] :]
-            )
-            variants.append(new_str)
-    else:
-        variants.append(org_str.replace(" ", "-"))
-    variants.append(org_str)
-    variants.append(org_str.replace(" ", ""))
-    return variants
-
-
-def reformulate_regex_prompt(
-    cond: str, attribute: str, obj_scores: dict, identifier_str: str
-):
-    # identifier_str = identifier_str.replace("\n", " ")
-    # obj_pos = generate_variations(identifier_str)
-    # obj_pos.append(cond)
-    # # obj_neg = []
-    # # for obj, score in obj_scores.items():
-    # #     if score == 0:
-    # #         obj_neg.append(obj)
-    # #     elif score == 2:
-    # #         obj_pos.append(obj)
-    # # obj_pos = obj_pos[:5]
-    # obj_pos = list(set(obj_pos))
-    # # obj_neg = obj_neg[:5]
-    # print(f"obj_pos: {obj_pos}")
-    cond = cond.replace(".", " ")
-    cond = cond.replace("-", " ")
-    cond = cond.replace("_", " ")
-    print(f"[Query Term]: {cond}")
-
-    prompt = f"""# Role & Objective
-You are an expert NLP engineer and Regular Expression (Regex) specialist. Your task is to analyze an input query, identify the most critical "non-semantic term" (a token with high specific information value but low natural language semantic meaning, such as serial numbers, model codes, or product identifiers), and generate a flexible Python-compatible Regex pattern that captures this term and its potential formatting variations.
-
-# Step-by-Step Instructions
-1. **Identify the Non-Semantic Core**: 
-   Examine the `[Query Term]`. Locate the specific alphanumeric code, model number, or serial identifier that uniquely distinguishes the item. Ignore standard descriptive words (e.g., "integrated", "fridge", "white").
-2. **Analyze Formatting Variations**:
-   Anticipate how a human or a messy dataset might format this specific code. Consider variations such as:
-   - Total omission of spaces or hyphens (e.g., "AB12CA" vs "AB 12 CA").
-   - Variations in letter casing (uppercase vs lowercase).
-   - Minor typos or alternative delimiters (dots, dashes, spaces).
-3. **Construct the Regex**:
-   - Create a regex pattern that targets this core identifier.
-   - Use optional spacing (`\s*`), optional hyphens/dots (`[-.]?`), and case-insensitive flags (`(?i)`) to ensure the pattern is highly resilient.
-
-# Strict Output Format Constraints
-- **CRITICAL**: Output ONLY the raw regular expression string.
-- **DO NOT** wrap the output in Markdown code blocks (e.g., NO ``` or 
-```python).
-- **DO NOT** write any Python code (e.g., NO `import re`, NO variables, NO `print()`).
-- **DO NOT** include explanations, preambles, or postscripts. 
-- Your entire response must contain nothing but the regex pattern itself.
-
-# Current Task
-Input: 
-Query Term: {cond}
-Output:
-"""
-    return prompt
-
-
-def reformulate(
-    gap_list: list,
-    cond: str,
-    attribute: str,
-    obj_scores: dict,
-    format_response: str,
-    sample_values: list,
-) -> str:
+def reformulate(gap_list: list, cond: str, attribute: str, obj_scores: dict) -> str:
     prompt_list = []
-    gap_list_dup = []
-    for gap in gap_list:
-        for _ in range(3):
-            if gap == "format":
-                prompt = reformulate_regex_prompt(
-                    cond, attribute, obj_scores, format_response
-                )
-            elif gap == "concept":
-                prompt = reformulate_narrower_prompt(
-                    cond, attribute, obj_scores, sample_values
-                )
-            elif gap == "synonym":
-                prompt = reformulate_synonym_prompt(
-                    cond, attribute, obj_scores, sample_values
-                )
-            prompt_list.append(prompt)
-            gap_list_dup.append(gap)
+    if "format" in gap_list:
+        prompt_list.append(reformulate_regex_prompt(cond, obj_scores))
+    if "concept" in gap_list:
+        prompt_list.append(reformulate_narrower_prompt(cond, attribute, obj_scores))
+    if "synonym" in gap_list:
+        prompt_list.append(reformulate_synonym_prompt(cond, attribute, obj_scores))
     responses = run_inference(prompt_list, temperature=0.7)
-    gap_reformulated_terms = {}
-    for gap, response in zip(gap_list_dup, responses):
-        print(f"gap: {gap}, response: {response}")
-        if response.strip().lower() != "none":
-            if gap != "format":
-                terms = response.split("|")
-                terms = [t.strip().lower() for t in terms if len(t.strip()) > 0]
-                try:
-                    gap_reformulated_terms[gap].extend(terms)
-                except:
-                    gap_reformulated_terms[gap] = list(terms)
-            else:
-                response = response.replace("\\b", "")
-                # test the validity of regex
-                try:
-                    re.compile(response)
-                except:
-                    continue
-                try:
-                    if response not in gap_reformulated_terms[gap] and response != cond:
-                        gap_reformulated_terms[gap].append(response)
-                except:
-                    gap_reformulated_terms[gap] = [response]
-    for gap, terms in gap_reformulated_terms.items():
-        gap_reformulated_terms[gap] = list(set(terms))
-    return gap_reformulated_terms
+    format_response, concept_hierarchy_response, synonym_response = responses
+    print(f"format response: {format_response}")
+    print(f"concept hierarchy response: {concept_hierarchy_response}")
 
 
 def reformulate_old(

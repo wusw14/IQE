@@ -132,25 +132,33 @@ class Query:
                     filtered_ids.append(id)
                     for idx, s in enumerate(score):
                         query_sim_scores[idx].append(s)
-        print(f"Filtered ids: {len(filtered_ids)}")
         return query_sim_thrs, query_sim_scores, filtered_ids
 
     def select_bm25_queries(
         self,
         retrieved_info: RetrievedInfo,
         select_query: str,
-        non_linguistic_values: list,
+        new_queries: list,
+    ):
+        queries = [q for q, s in self.obj_scores.items() if s > 1] + new_queries
+        queries.append(self.org_query)
+        queries = list(set(queries))
+        return queries
+
+    def select_bm25_queries_old(
+        self,
+        retrieved_info: RetrievedInfo,
+        select_query: str,
+        new_queries: list,
     ):
         if select_query == "none" or retrieved_info is None:
-            queries = [
-                q for q, s in self.query_scores.items() if s > 1
-            ] + non_linguistic_values
+            queries = [q for q, s in self.query_scores.items() if s > 1] + new_queries
             queries = list(set(queries))
             return queries
         elif select_query == "random":
             candidates = [
                 q for q, s in self.query_scores.items() if s > 1
-            ] + non_linguistic_values
+            ] + new_queries
             candidates = list(set(candidates))
             return random.sample(candidates, min(len(candidates), 5))
         # evaluate the informativeness of each query and remove the non-informative queries
@@ -189,12 +197,14 @@ class Query:
                 self.bm25_query_credits[q] = new_credit
         # get top queries with UCT selection
         queries = uct_selection(self.bm25_query_credits, self.bm25_query_visits)
-        for q in self.new_queries_from_table:
+        for q in new_queries:
             if q not in queries and self.bm25_query_visits.get(q, 0) < 1:
                 queries.append(q)
         return queries
 
-    def select_hnsw_queries(self, retrieved_info: RetrievedInfo, select_query: str):
+    def select_hnsw_queries_old(
+        self, retrieved_info: RetrievedInfo, select_query: str, new_queries: list
+    ):
         if select_query == "none" or retrieved_info is None:
             return [q for q, s in self.query_scores.items() if s > 1]
         elif select_query == "random":
@@ -235,7 +245,7 @@ class Query:
                 self.hnsw_query_credits[q] = new_credit
         # get top queries with UCT selection
         queries = uct_selection(self.hnsw_query_credits, self.hnsw_query_visits)
-        for q in self.new_queries_from_table:
+        for q in new_queries:
             if q not in queries and self.hnsw_query_visits.get(q, 0) < 1:
                 queries.append(q)
         return queries
@@ -299,23 +309,23 @@ class Query:
         self.bm25_query_list = new_query_list
         return new_query_list
 
-    def select_diversified_query_words(self, emb_model, select_query):
+    def select_hnsw_queries(self, emb_model, select_query, new_queries):
         if select_query == "none":
             return list(self.query_scores.keys())
-        query_list = []
+        query_list = [self.org_query]
         # keep the query words with score > 1
         if (
-            np.sum(np.array(list(self.query_scores.values())) > 0) == 1
+            np.sum(np.array(list(self.obj_scores.values())) > 0) == 1
             or select_query == "diversified"
         ):
             thr = 0
         else:
             thr = 2
-        for q, s in self.query_scores.items():
+        for q, s in self.obj_scores.items():
             if s >= thr:
                 query_list.append(q)
-        if select_query == "reliable":
-            return query_list
+        query_list.extend(new_queries)
+        query_list = list(set(query_list))
         selected_query_list = []
         selected_qids = []
         for i, q in enumerate(query_list):
@@ -337,11 +347,8 @@ class Query:
         sim_scores = np.max(sim_matrix[selected_qids], axis=0)
         # prioritize the newly generated/verified query words
         for i, q in enumerate(query_list):
-            if (
-                q not in self.new_queries_from_generated
-                and q not in self.new_queries_from_table
-            ):
-                sim_scores[i] = 1
+            if q in new_queries:
+                sim_scores[i] -= 0.05
         for i in range(len(query_list) - len(selected_query_list)):
             # select the word with the least similarity score
             qid = np.argmin(sim_scores)

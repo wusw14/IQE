@@ -12,16 +12,16 @@ from reformulate import score_query
 def llm_check_retrieved_objs(query: Query, obj_to_check: list[str], args):
     # new_pos_objs = llm_check(query.org_query, obj_to_check, args.llm_template, {}, 1)
     obj_scores = llm_check(query.org_query, obj_to_check, args.llm_template, {}, 1)
-    new_pos_objs = [k for k, v in obj_scores.items() if v >= 1]
-    print(f"New positive objects: {new_pos_objs}")
+    # new_pos_objs = [k for k, v in obj_scores.items() if v >= 1]
+    # print(f"New positive objects: {new_pos_objs}")
 
-    new_query_objs = [q for q in new_pos_objs if q not in query.query_scores]
-    obj_scores_v2 = score_query(query.query_condition, new_query_objs)
-    query_scores = {}
-    for k, v in obj_scores_v2.items():
-        query_scores[k] = np.round((v + obj_scores.get(k, 0)) / 2, 2)
-    print(f"Query scores this turn: {query_scores}")
-    return obj_scores, query_scores
+    # new_query_objs = [q for q in new_pos_objs if q not in query.query_scores]
+    # obj_scores_v2 = score_query(query.query_condition, new_query_objs)
+    # query_scores = {}
+    # for k, v in obj_scores_v2.items():
+    #     query_scores[k] = np.round((v + obj_scores.get(k, 0)) / 2, 2)
+    # print(f"Query scores this turn: {query_scores}")
+    return obj_scores  # , query_scores
 
 
 def iterative_check_retrieved_objs(

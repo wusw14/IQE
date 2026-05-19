@@ -18,6 +18,7 @@ class RetrievedInfo(BaseModel):
     bm25_scores: list[list[float]]
     bm25_unique_ids: list[int]
     bm25_pos_scores: list[list[float]]
+    bm25_max_scalar: float
     hnsw_objs: list[str]
     hnsw_agg_pos_scores: list[float]
     hnsw_agg_pos_scores_avg: list[float]
@@ -26,6 +27,7 @@ class RetrievedInfo(BaseModel):
     hnsw_scores: list[list[float]]
     hnsw_unique_ids: list[int]
     hnsw_pos_scores: list[list[float]]
+    hnsw_max_scalar: float
 
 
 def retrieve_corpus(
@@ -49,6 +51,7 @@ def retrieve_corpus(
         bm25_agg_pos_scores_avg,
         bm25_agg_pos_scores_max,
         pos_bm25_scores,
+        bm25_max_scalar,
     ) = agg_results(
         unique_bm25_ids,
         pos_bm25_scores,
@@ -69,6 +72,7 @@ def retrieve_corpus(
         hnsw_agg_pos_scores_avg,
         hnsw_agg_pos_scores_max,
         pos_hnsw_scores,
+        hnsw_max_scalar,
     ) = agg_results(
         unique_hsnw_ids,
         pos_hnsw_scores,
@@ -87,6 +91,7 @@ def retrieve_corpus(
         bm25_scores=bm25_scores,
         bm25_unique_ids=unique_bm25_ids,
         bm25_pos_scores=pos_bm25_scores,
+        bm25_max_scalar=bm25_max_scalar,
         hnsw_objs=hnsw_objs,
         hnsw_agg_pos_scores=hnsw_agg_pos_scores,
         hnsw_agg_pos_scores_avg=hnsw_agg_pos_scores_avg,
@@ -95,6 +100,7 @@ def retrieve_corpus(
         hnsw_scores=hnsw_scores,
         hnsw_unique_ids=unique_hsnw_ids,
         hnsw_pos_scores=pos_hnsw_scores,
+        hnsw_max_scalar=hnsw_max_scalar,
     )
     return retrieved_info
 
@@ -171,4 +177,11 @@ def agg_results(
     agg_pos_scores = list(agg_pos_scores)[:k]
     pos_scores_avg = list(pos_scores_avg)[:k]
     pos_scores_max = list(pos_scores_max)[:k]
-    return retrieved_ids, agg_pos_scores, pos_scores_avg, pos_scores_max, pos_scores
+    return (
+        retrieved_ids,
+        agg_pos_scores,
+        pos_scores_avg,
+        pos_scores_max,
+        pos_scores,
+        max_scalar,
+    )

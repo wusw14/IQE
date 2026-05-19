@@ -18,26 +18,10 @@ def count_tokens_hf(text, model_name="gpt2"):
 
 
 def prepare_prompts(query, corpus):
-    parts = 1
-    while True:
-        # split corpus into parts
-        num_parts = (len(corpus) + parts - 1) // parts
-        corpus_parts = [
-            corpus[i * num_parts : (i + 1) * num_parts] for i in range(parts)
-        ]
-        if_within_limit = True
-        prompts = []
-        for corpus_part in corpus_parts:
-            prompt = f"Given the query: {query}\nThe list of candidate table values: {corpus_part}. Please identify which values are the same as or a type of the query. Your response should be a list of values separated by ' | ' without any other text."
-            prompts.append(prompt)
-            token_num = count_tokens_hf(prompt, model_name)
-            if token_num > 30000:
-                if_within_limit = False
-                break
-        if if_within_limit:
-            break
-        parts += 1
-    print(f"parts: {parts}")
+    prompts = []
+    for value in corpus:
+        prompt = f"The {value} is the same as or a type of {query}.\nYour job is to determine whether the claim is true for the given context.\nDirectly answer with 'True' or 'False' without any other text."
+        prompts.append(prompt)
     return prompts
 
 
@@ -49,8 +33,9 @@ def run_inference(
         messages = [
             {"role": "user", "content": prompt},
         ]
-        if system_prompt:
-            messages.insert(0, {"role": "system", "content": system_prompt})
+        system_prompt = "The user will provide a claim and some relevant context.\nYour job is to determine whether the claim is true for the given context.\nThe answer should be either True or False."
+        # if system_prompt:
+        #     messages.insert(0, {"role": "system", "content": system_prompt})
         response = client.chat.completions.create(
             model=model_name,
             messages=messages,
@@ -98,6 +83,7 @@ def parse_args():
     )
     parser.add_argument("--exp_name", type=str, default="debug")
     parser.add_argument("--mode", type=str, default="lotus")
+    parser.add_argument("--port", type=int, default=1117)
     return parser.parse_args()
 
 
@@ -120,8 +106,8 @@ if __name__ == "__main__":
         model_name = "Qwen/Qwen3.5-27B"
         helper_model_name = "Qwen/Qwen3.5-27B"
         api_key = "qwen3.5"
-        port = 1125
-        helper_port = 1125
+        port = args.port
+        helper_port = args.port
     else:
         raise ValueError(f"Invalid LLM: {args.llm}")
 
@@ -179,12 +165,17 @@ if __name__ == "__main__":
             continue
         start_time = time.time()
         prompts = prepare_prompts(query, corpus)
-        responses = run_inference(prompts, max_tokens=2000)
+        responses = run_inference(prompts, max_tokens=5)
         preds = []
-        for response in responses:
-            vals = response.split(" | ")
-            vals = [val.strip() for val in vals]
-            preds.extend(vals)
+        for value, response in zip(corpus, responses):
+            response = response.lower()
+            true_index, false_index = len(response), len(response)
+            if "true" in response:
+                true_index = response.index("true")
+            if "false" in response:
+                false_index = response.index("false")
+            if true_index < false_index:
+                preds.append(value)
         preds = list(set(preds))
         result = {"query": query, "pred": preds}
         result["answers"] = answers
@@ -193,7 +184,7 @@ if __name__ == "__main__":
         print(result)
         save_results(results, output_path)
         cnt += 1
-        if args.exp_name == "debug" and cnt >= 10:
+        if args.exp_name == "debug" and cnt >= 3:
             break
     # save results
     save_results(results, output_path)

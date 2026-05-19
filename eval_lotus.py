@@ -63,11 +63,11 @@ if __name__ == "__main__":
         port = 1117
         helper_port = 1107
     elif args.llm == "qwen":
-        model_name = "openai/Qwen/Qwen2.5-72B-Instruct"
-        helper_model_name = "openai/Qwen/Qwen2.5-7B-Instruct"
-        api_key = "qwen-72b"
-        port = 1172
-        helper_port = 1107
+        model_name = "openai/Qwen/Qwen3.5-27B"
+        helper_model_name = "openai/Qwen/Qwen3.5-27B"
+        api_key = "qwen3.5"
+        port = 1125
+        helper_port = 1125
     else:
         raise ValueError(f"Invalid LLM: {args.llm}")
     lm = LM(
@@ -76,6 +76,10 @@ if __name__ == "__main__":
         api_key=api_key,
         max_tokens=5,
         max_batch_size=512,
+        extra_body={
+            "top_k": 20,
+            "chat_template_kwargs": {"enable_thinking": False},
+        },
     )
     helper_lm = LM(
         model=helper_model_name,
@@ -83,7 +87,16 @@ if __name__ == "__main__":
         api_key="llama_helper" if args.llm == "llama" else "qwen_helper",
         max_tokens=5,
         max_batch_size=512,
+        extra_body={
+            "top_k": 20,
+            "chat_template_kwargs": {"enable_thinking": False},
+        },
     )
+    # output = lm.__call__(
+    #     messages=[[{"role": "user", "content": "Hello, how are you?"}]]
+    # )
+    # print(output)
+    # exit()
     # rm = SentenceTransformersRM(
     #     model="all-MiniLM-L6-v2",
     #     max_batch_size=512,

@@ -92,7 +92,7 @@ def uct_selection(credits: dict, visits: dict) -> list:
             continue
         score = w + np.sqrt(1e-4 * np.log(total_visits) / n)
         query_scores[q] = score
-        print(f"q: {q}, score: {score:.4f}, w: {w:.4f}, n: {n}")
-    print("=================")
+    #     print(f"q: {q}, score: {score:.4f}, w: {w:.4f}, n: {n}")
+    # print("=================")
     query_scores = sorted(query_scores.items(), key=lambda x: x[1], reverse=True)
     return [q for q, _ in query_scores][:5] + selected_queries

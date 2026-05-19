@@ -78,6 +78,12 @@ def run_inference(
             max_tokens=max_tokens,
             temperature=temperature,
             seed=42 if temperature == 0 else None,
+            extra_body={
+                "top_k": 20,
+                "chat_template_kwargs": {
+                    "enable_thinking": False,
+                },
+            },
         )
         return response.choices[0].message.content
 

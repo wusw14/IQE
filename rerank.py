@@ -59,10 +59,10 @@ def get_next_objs(
         hnsw_objs.index(obj) if obj in hnsw_objs else -1 for obj in obj_to_check
     ]
     hnsw_scores = [hnsw_agg_pos_scores[i] if i != -1 else 0 for i in hnsw_positions]
-    print(f"bm25_positions: {bm25_positions}")
-    print(f"bm25_scores: {list(np.round(bm25_scores, 4))}")
-    print(f"hnsw_positions: {hnsw_positions}")
-    print(f"hnsw_scores: {list(np.round(hnsw_scores, 4))}")
+    # print(f"bm25_positions: {bm25_positions}")
+    # print(f"bm25_scores: {list(np.round(bm25_scores, 4))}")
+    # print(f"hnsw_positions: {hnsw_positions}")
+    # print(f"hnsw_scores: {list(np.round(hnsw_scores, 4))}")
     return obj_to_check
 
 
@@ -82,7 +82,7 @@ def prepare_data(
         # feature[0] = feature[0] / max_bm25_score
         # feature.append(max(feature[0], feature[1]))
         # score = (score + query.query_scores.get(obj, 0)) / 2
-        score = query.query_scores.get(obj, 0)
+        score = query.obj_scores.get(obj, 0)
         if score > 0:
             pos_samples.append(feature)
             pos_objs.append(obj)
@@ -91,8 +91,8 @@ def prepare_data(
             neg_samples.append(feature)
             neg_objs.append(obj)
             neg_y.append(score)
-    print(f"pos_objs: {pos_objs}")
-    print(f"neg_objs: {neg_objs[:5]}")
+    # print(f"pos_objs: {pos_objs}")
+    # print(f"neg_objs: {neg_objs[:5]}")
     train_X = np.concatenate([pos_samples, neg_samples], axis=0)
     train_objs = pos_objs + neg_objs
     train_y = pos_y + neg_y
@@ -101,7 +101,7 @@ def prepare_data(
     candidate_objs = list(
         (set(bm25_objs) | set(hnsw_objs)) - set(list(query.obj_scores.keys()))
     )
-    print(len(candidate_objs))
+    # print(len(candidate_objs))
     for i, obj in enumerate(candidate_objs):
         bm25_score = bm25_obj_score_dict.get(obj, [0, 0])
         hnsw_score = hnsw_obj_score_dict.get(obj, [0, 0])
@@ -141,7 +141,7 @@ def search_best_params(X, y):
     for i, y_i in enumerate(sorted_y):
         if y_i > 0:
             idcg += y_i / np.log2(i + 2)
-    print(f"idcg: {idcg:.4f}")
+    # print(f"idcg: {idcg:.4f}")
     for w1 in np.arange(0, 1, 0.1):
         for w2 in np.arange(0, 1, 0.1):
             if w1 + w2 > 1:
@@ -170,11 +170,12 @@ def search_best_params(X, y):
     neg_cnt = 0
     for i, score in enumerate(best_score):
         if y[i] == 1 or neg_cnt < 5:
-            print(f"y={y[i]}, score={score:.2f}, feature={list(np.round(X[i], 4))}")
+            # print(f"y={y[i]}, score={score:.2f}, feature={list(np.round(X[i], 4))}")
+            pass
         if y[i] == 0:
             neg_cnt += 1
     # print(f"BEST NDCG: {best_ndcg:.4f}")
-    print(f"BEST K: {best_k}, BEST NDCG: {best_ndcg:.4f}")
+    # print(f"BEST K: {best_k}, BEST NDCG: {best_ndcg:.4f}")
     return best_w1, best_w2, best_score
 
 
@@ -244,7 +245,7 @@ def rerank_retrieved_objs(
     # search the best score function
     if pos_num > 0 and args.rerank == "hybrid":
         best_w1, best_w2, train_score = search_best_params(train_X, train_y)
-        print(f"best_w1: {best_w1:.2f}, best_w2: {best_w2:.2f}")
+        # print(f"best_w1: {best_w1:.2f}, best_w2: {best_w2:.2f}")
     elif args.rerank == "equal":
         best_w1, best_w2, train_score = 0.5, 0.5, (train_X[:, 0] + train_X[:, 1]) / 2
     else:
@@ -267,7 +268,7 @@ def rerank_retrieved_objs(
         threshold = determine_check_num_and_threshold(
             train_y, train_score, args.tau, args.alpha
         )
-        print(f"score_threshold: {threshold:.4f}")
+        # print(f"score_threshold: {threshold:.4f}")
     else:
         threshold = -1
     # # save the obj_score to a json file
@@ -284,8 +285,8 @@ def rerank_retrieved_objs(
             obj_to_check.append(obj)
         else:
             break
-    for obj in obj_to_check[:5] + obj_to_check[-5:]:
-        print(
-            f"obj: {obj}, score: {obj_score[obj]:.2f}, feature: {test_obj_to_feature[obj]}"
-        )
+    # for obj in obj_to_check[:5] + obj_to_check[-5:]:
+    #     print(
+    #         f"obj: {obj}, score: {obj_score[obj]:.2f}, feature: {test_obj_to_feature[obj]}"
+    #     )
     return obj_to_check, score < threshold
